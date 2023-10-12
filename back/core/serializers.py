@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from .models import Parameter, User
@@ -77,6 +78,7 @@ class AuthUserLoginSerializer(serializers.Serializer):
         try:
             refresh = RefreshToken.for_user(user)
             access = AccessToken.for_user(user)
+            access['role'] = user.role
             refresh_token = str(refresh)
             access_token = str(access)
 

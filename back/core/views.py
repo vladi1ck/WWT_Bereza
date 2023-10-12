@@ -26,7 +26,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
 
         # Add custom claims
-        token['id'] = user.id
+        # token['id'] = str(user.id)
         token['username'] = user.username
         token['role'] = user.role
         # ...
@@ -50,6 +50,7 @@ def upldParameter(request):
         serializer.save()
         return Response (serializer.data, status=201)
     return Response (serializer.errors, status=400)
+
 
 class AuthUserLoginView(APIView):
     serializer_class = AuthUserLoginSerializer
