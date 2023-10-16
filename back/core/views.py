@@ -71,7 +71,8 @@ class AuthUserLoginView(APIView):
                 'refresh': serializer.data['refresh'],
                 'authenticatedUser': {
                     'username': serializer.data['username'],
-                    'role': serializer.data['role']
+                    'role': serializer.data['role'],
+                    'id': serializer.data['id'],
                 }
             }
 

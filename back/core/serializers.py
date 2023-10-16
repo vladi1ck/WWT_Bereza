@@ -60,6 +60,7 @@ class AuthUserLoginSerializer(serializers.Serializer):
     access = serializers.CharField(read_only=True)
     refresh = serializers.CharField(read_only=True)
     role = serializers.CharField(read_only=True)
+    id = serializers.CharField(read_only=True)
 
     def create(self, validated_date):
         pass
@@ -96,7 +97,7 @@ class AuthUserLoginSerializer(serializers.Serializer):
                 'last_name': user.last_name,
                 'first_name': user.first_name,
                 'role': user.role,
-
+                'id': user.id,
 
             }
             return validation
