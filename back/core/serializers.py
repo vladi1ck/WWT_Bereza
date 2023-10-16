@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from .models import Parameter, User
+from .models import Parameter, User, LabValue, ProjValue
 from rest_framework.validators import UniqueTogetherValidator
 from django.utils import dateformat
 from django.conf import settings
@@ -105,3 +105,15 @@ class UserListSerializer(serializers.ModelSerializer):
             'username',
             'role'
         )
+
+
+class labValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LabValue
+        fields = '__all__'
+
+
+class projValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjValue
+        fields = '__all__'

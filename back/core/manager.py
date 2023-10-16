@@ -8,6 +8,8 @@ class CustomUserManager(BaseUserManager):
     and has an is_admin field to allow access to the admin app
     """
     def create_user(self, username, password, **extra_fields):
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('is_superuser', False)
         if not username:
             raise ValueError(_("The username must be set"))
         if not password:
