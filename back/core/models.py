@@ -47,7 +47,6 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = 'Пользователи'
         ordering = ['id']
 
-
     def __str__(self):
         """
         String for representing the MyModelName object (in Admin site etc.)
@@ -71,9 +70,8 @@ class BBO(models.Model):
         return f'{self.name}'
 
 
-
 class LabValue(models.Model):
-    bbo_id = models.ForeignKey(to=BBO,related_name='lab_id', on_delete=models.PROTECT, editable=True, default="")
+    bbo_id = models.ForeignKey(to=BBO, related_name='lab_id', on_delete=models.PROTECT, editable=True, default="")
     doseFromWeight = models.FloatField()
     doseFromVolume = models.FloatField()
     ashPercent = models.FloatField()
@@ -116,5 +114,3 @@ class ProjValue(models.Model):
 
     def __str__(self) -> str:
         return f'{self.bbo_id}'
-
-

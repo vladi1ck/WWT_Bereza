@@ -31,12 +31,31 @@ class PostLabValueView(APIView):
             status_code = status.HTTP_200_OK
             serializer.save()
 
-            response = {
-                'success': True,
-                'statusCode': status_code,
-            }
-
-            return Response(response, status=status_code)
+        values1 = LabValue.objects.all().filter(bbo_id=1).last()
+        values2 = LabValue.objects.all().filter(bbo_id=2).last()
+        values3 = LabValue.objects.all().filter(bbo_id=3).last()
+        values4 = LabValue.objects.all().filter(bbo_id=4).last()
+        # if values1 or values2 or values3 or values4 is None:
+        #     response = {
+        #         'success': True,
+        #         'status_code': status.HTTP_200_OK,
+        #         'message': 'Project values is empty',
+        #     }
+        # else:
+        serializer1 = self.serializer_class(values1, many=False)
+        serializer2 = self.serializer_class(values2, many=False)
+        serializer3 = self.serializer_class(values3, many=False)
+        serializer4 = self.serializer_class(values4, many=False)
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'message': 'Successfully saved laboratory values',
+            'data_bbo_1': serializer1.data,
+            'data_bbo_2': serializer2.data,
+            'data_bbo_3': serializer3.data,
+            'data_bbo_4': serializer4.data,
+        }
+        return Response(response, status=status_code)
 
 
 class GetLabValueView(APIView):
@@ -44,7 +63,8 @@ class GetLabValueView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        values = LabValue.objects.all().last()
+        bbo_id = request.data.get("bbo_id")
+        values = ProjValue.objects.all().filter(bbo_id=bbo_id).last()
         if values is None:
             response = {
                 'success': True,
@@ -57,7 +77,8 @@ class GetLabValueView(APIView):
                 'success': True,
                 'status_code': status.HTTP_200_OK,
                 'message': 'Successfully fetched laboratory values',
-                'data': serializer.data
+                'data': serializer.data,
+                'request': request.data
 
             }
         return Response(response, status=status.HTTP_200_OK)
@@ -75,12 +96,32 @@ class PostProjValueView(APIView):
             status_code = status.HTTP_200_OK
             serializer.save()
 
-            response = {
-                'success': True,
-                'statusCode': status_code,
-            }
+        values1 = ProjValue.objects.all().filter(bbo_id=1).last()
+        values2 = ProjValue.objects.all().filter(bbo_id=2).last()
+        values3 = ProjValue.objects.all().filter(bbo_id=3).last()
+        values4 = ProjValue.objects.all().filter(bbo_id=4).last()
+        # if values1 or values2 or values3 or values4 is None:
+        #     response = {
+        #         'success': True,
+        #         'status_code': status.HTTP_200_OK,
+        #         'message': 'Project values is empty',
+        #     }
+        # else:
+        serializer1 = self.serializer_class(values1, many=False)
+        serializer2 = self.serializer_class(values2, many=False)
+        serializer3 = self.serializer_class(values3, many=False)
+        serializer4 = self.serializer_class(values4, many=False)
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'message': 'Successfully fetched project values',
+            'data_bbo_1': serializer1.data,
+            'data_bbo_2': serializer2.data,
+            'data_bbo_3': serializer3.data,
+            'data_bbo_4': serializer4.data,
 
-            return Response(response, status=status_code)
+        }
+        return Response(response, status=status_code)
 
 
 class GetProjValueView(APIView):
@@ -88,7 +129,8 @@ class GetProjValueView(APIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        values = ProjValue.objects.all().last()
+        bbo_id = request.data.get("bbo_id")
+        values = ProjValue.objects.all().filter(bbo_id=bbo_id).last()
         if values is None:
             response = {
                 'success': True,
@@ -101,7 +143,74 @@ class GetProjValueView(APIView):
                 'success': True,
                 'status_code': status.HTTP_200_OK,
                 'message': 'Successfully fetched project values',
-                'data': serializer.data
+                'data': serializer.data,
+                'request': request.data
 
             }
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class GetAllBBOProjValueView(APIView):
+    serializer_class = projValueSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        values1 = ProjValue.objects.all().filter(bbo_id=1).last()
+        values2 = ProjValue.objects.all().filter(bbo_id=2).last()
+        values3 = ProjValue.objects.all().filter(bbo_id=3).last()
+        values4 = ProjValue.objects.all().filter(bbo_id=4).last()
+        # if values1 or values2 or values3 or values4 is None:
+        #     response = {
+        #         'success': True,
+        #         'status_code': status.HTTP_200_OK,
+        #         'message': 'Project values is empty',
+        #     }
+        # else:
+        serializer1 = self.serializer_class(values1, many=False)
+        serializer2 = self.serializer_class(values2, many=False)
+        serializer3 = self.serializer_class(values3, many=False)
+        serializer4 = self.serializer_class(values4, many=False)
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully fetched project values',
+            'data_bbo_1': serializer1.data,
+            'data_bbo_2': serializer2.data,
+            'data_bbo_3': serializer3.data,
+            'data_bbo_4': serializer4.data,
+
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class GetAllBBOLabValueView(APIView):
+    serializer_class = labValueSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        values1 = LabValue.objects.all().filter(bbo_id=1).last()
+        values2 = LabValue.objects.all().filter(bbo_id=2).last()
+        values3 = LabValue.objects.all().filter(bbo_id=3).last()
+        values4 = LabValue.objects.all().filter(bbo_id=4).last()
+        # if values1 or values2 or values3 or values4 is None:
+        #     response = {
+        #         'success': True,
+        #         'status_code': status.HTTP_200_OK,
+        #         'message': 'Project values is empty',
+        #     }
+        # else:
+        serializer1 = self.serializer_class(values1, many=False)
+        serializer2 = self.serializer_class(values2, many=False)
+        serializer3 = self.serializer_class(values3, many=False)
+        serializer4 = self.serializer_class(values4, many=False)
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully fetched laboratory values',
+            'data_bbo_1': serializer1.data,
+            'data_bbo_2': serializer2.data,
+            'data_bbo_3': serializer3.data,
+            'data_bbo_4': serializer4.data,
+
+        }
         return Response(response, status=status.HTTP_200_OK)

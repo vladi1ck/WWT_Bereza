@@ -77,8 +77,13 @@ class AuthUserLoginSerializer(serializers.Serializer):
 
         try:
             refresh = RefreshToken.for_user(user)
+            refresh['role'] = user.role
+            refresh['username'] = user.username
+
             access = AccessToken.for_user(user)
             access['role'] = user.role
+            access['username'] = user.username
+
             refresh_token = str(refresh)
             access_token = str(access)
 
@@ -92,6 +97,7 @@ class AuthUserLoginSerializer(serializers.Serializer):
                 'first_name': user.first_name,
                 'role': user.role,
 
+
             }
             return validation
         except Exception:
@@ -103,7 +109,8 @@ class UserListSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'username',
-            'role'
+            'role',
+            'id',
         )
 
 

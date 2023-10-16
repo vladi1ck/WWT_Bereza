@@ -8,12 +8,16 @@ from .logic_for_bbo import (
     GetLabValueView,
     PostProjValueView,
     GetProjValueView,
+    GetAllBBOProjValueView,
+    GetAllBBOLabValueView,
 )
 
 urlpatterns = [
     path('post_lab_value', PostLabValueView.as_view()),
-    path('get_lab_value', GetLabValueView.as_view()),
-    path('get_proj_value', GetProjValueView.as_view()),
+    # path('get_lab_value', GetLabValueView.as_view()),
+    # path('get_proj_value', GetProjValueView.as_view()),
     path('post_proj_value', PostProjValueView.as_view()),
+    path('get_all_proj_value', GetAllBBOProjValueView.as_view()),
+    path('get_all_lab_value', GetAllBBOLabValueView.as_view()),
 
 ]
