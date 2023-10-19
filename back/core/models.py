@@ -114,3 +114,19 @@ class ProjValue(models.Model):
 
     def __str__(self) -> str:
         return f'{self.bbo_id}'
+
+
+class ParameterFromAnalogSensorForBBO(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='parameter_analog_id', on_delete=models.CASCADE, editable=True, default="")
+    name = models.CharField(max_length=255, null=False)
+    value = models.FloatField()
+    is_main = models.BooleanField(default=False)
+    is_masked = models.BooleanField(default=False)
+    is_ready = models.BooleanField(default=False)
+    is_accident = models.BooleanField(default=False) #Авария - показания датчика неккоректны
+    time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.bbo_id}'
+
+

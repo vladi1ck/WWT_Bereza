@@ -1,5 +1,5 @@
 from django.contrib.auth.admin import UserAdmin
-from .models import User, BBO, Parameter, LabValue, ProjValue
+from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO
 from django.contrib import admin
 
 
@@ -11,7 +11,7 @@ class MyUserAdmin(admin.ModelAdmin):
     exclude = ('username',)
     search_fields = ()  # Contain only fields in your `custom-user-model` intended for searching
     ordering = ()  # Contain only fields in your `custom-user-model` intended to ordering
-    filter_horizontal = () # Leave it empty. You have neither `groups` or `user_permissions`
+    filter_horizontal = ()  # Leave it empty. You have neither `groups` or `user_permissions`
     # fieldsets = UserAdmin.fieldsets + (
     #         (None, {'fields': ('mobile',)}),
     # )
@@ -26,9 +26,15 @@ class MyBBOAdmin(admin.ModelAdmin):
 class MyProjAdmin(admin.ModelAdmin):
     list_display = ('bbo_id', 'modified_time', 'modified_by')
 
+
 @admin.register(LabValue)
 class MyLabAdmin(admin.ModelAdmin):
     list_display = ('bbo_id', 'modified_time', 'modified_by')
+
+
+@admin.register(ParameterFromAnalogSensorForBBO)
+class MyParameterFromAnalogSensorForBBOAdmin(admin.ModelAdmin):
+    list_display = ('name', 'bbo_id', 'time')
 
 
 admin.site.register(User, MyUserAdmin)

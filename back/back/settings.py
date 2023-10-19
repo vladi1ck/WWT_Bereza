@@ -31,6 +31,9 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'daphne',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,7 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'channels',
+
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
@@ -47,7 +50,6 @@ INSTALLED_APPS = [
 
 ]
 
-ASGI_APPLICATION = 'core.asgi.application'
 
 CHANNEL_LAYERS = {
     'default':{
@@ -88,6 +90,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'back.wsgi.application'
+ASGI_APPLICATION = 'back.asgi.application'
+
 
 
 # Database
@@ -173,7 +177,12 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTStatelessUserAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    ]
+    ],
+    'DEFAULT_PARSER_CLASSES': (
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser'
+     )
+
 }
 
 

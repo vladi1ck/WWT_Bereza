@@ -15,13 +15,37 @@ from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
-from .serializers import (labValueSerializer, projValueSerializer)
-from .models import Parameter, User, LabValue, ProjValue
+from .serializers import (labValueSerializer, projValueSerializer, ParameterFromAnalogSensorForBBOSerializer)
+from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO
 
 
 class PostLabValueView(APIView):
     serializer_class = labValueSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
+
+    # def get_all_values(self):
+    #     serializers = {}
+    #     values = {}
+    #     i = 1
+    #     for i in 4:
+    #         try:
+    #             value = ProjValue.objects.all().filter(bbo_id=i).last()
+    #             values.pop(value, i)
+    #         except Exception as _ex:
+    #             print(_ex)
+    #
+    #     for value in values:
+    #         j = 0
+    #         serializer = self.serializer_class(value, many=False)
+    #         serializers.pop(serializer, j)
+    #         j = j + 1
+    #     response = {
+    #         'data_bbo_1': serializers.get(0),
+    #         'data_bbo_2': serializers.get(1),
+    #         'data_bbo_3': serializers.get(2),
+    #         'data_bbo_4': serializers.get(3),
+    #     }
+    #     return response
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -86,7 +110,7 @@ class GetLabValueView(APIView):
 
 class PostProjValueView(APIView):
     serializer_class = projValueSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -214,3 +238,35 @@ class GetAllBBOLabValueView(APIView):
 
         }
         return Response(response, status=status.HTTP_200_OK)
+
+
+class ParameterFromAnalogSensorForBBOView(APIView):
+    serializer_class = ParameterFromAnalogSensorForBBOSerializer
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        serializer = ParameterFromAnalogSensorForBBOSerializer(data=data)
+        valid = serializer.is_valid(raise_exception=True)
+        if valid:
+            status_code = status.HTTP_200_OK
+            serializer.save()
+
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'message': 'Successfully saved parameter values',
+        }
+        return Response(response, status=status_code)
+
+
+class AllParameterFromAnalogSensorForBBO1View(APIView):
+    serializer_class = ParameterFromAnalogSensorForBBOSerializer
+
+    def get_bbo1_data(self):
+        data = ParameterFromAnalogSensorForBBO.objects().filter(bbo_id=1).order_by('time')[:5]
+        serializer_data = self.serializer_class(data, many=True)
+        response = {
+            serializer_data
+        }
+        return response

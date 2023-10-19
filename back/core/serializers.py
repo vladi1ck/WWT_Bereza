@@ -4,11 +4,12 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from .models import Parameter, User, LabValue, ProjValue
+from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO
 from rest_framework.validators import UniqueTogetherValidator
 from django.utils import dateformat
 from django.conf import settings
 from datetime import datetime
+
 
 # class UserSerializer(serializers.ModelSerializer):
 #     class Meta:
@@ -31,6 +32,7 @@ class ParameterSerializer(serializers.ModelSerializer):
         model = Parameter
         fields = '__all__'
 
+
 class ParameterSerializerForSave(serializers.ModelSerializer):
     class Meta:
         model = Parameter
@@ -47,7 +49,7 @@ class AuthUserRegistrationSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
-        if validated_data=="1":
+        if validated_data == "1":
             auth_user = User.objects.create_superuser(**validated_data)
         else:
             auth_user = User.objects.create_user(**validated_data)
@@ -124,4 +126,10 @@ class labValueSerializer(serializers.ModelSerializer):
 class projValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjValue
+        fields = '__all__'
+
+
+class ParameterFromAnalogSensorForBBOSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParameterFromAnalogSensorForBBO
         fields = '__all__'

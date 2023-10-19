@@ -10,6 +10,7 @@ from .logic_for_bbo import (
     GetProjValueView,
     GetAllBBOProjValueView,
     GetAllBBOLabValueView,
+    ParameterFromAnalogSensorForBBOView
 )
 
 urlpatterns = [
@@ -19,5 +20,6 @@ urlpatterns = [
     path('post_proj_value', PostProjValueView.as_view()),
     path('get_all_proj_value', GetAllBBOProjValueView.as_view()),
     path('get_all_lab_value', GetAllBBOLabValueView.as_view()),
+    path('post_analog_parameter', ParameterFromAnalogSensorForBBOView.as_view()),
 
 ]

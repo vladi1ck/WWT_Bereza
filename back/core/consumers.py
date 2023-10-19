@@ -1,13 +1,17 @@
 import json
+from typing import Dict, Union, Any
+from django.core import serializers
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from djangochannelsrestframework import permissions
 from djangochannelsrestframework.generics import GenericAsyncAPIConsumer
 from djangochannelsrestframework.mixins import ListModelMixin
 from djangochannelsrestframework.observer import model_observer
+from rest_framework.utils.serializer_helpers import ReturnDict
 
-from .models import Parameter
-from .serializers import ParameterSerializer
+from core.logic_for_bbo import AllParameterFromAnalogSensorForBBO1View
+from .models import Parameter, ParameterFromAnalogSensorForBBO
+from .serializers import ParameterSerializer, ParameterFromAnalogSensorForBBOSerializer
 
 # class ChatConsumer(WebsocketConsumer):
 #     def connect(self):
@@ -46,9 +50,8 @@ from .serializers import ParameterSerializer
 
 
 class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
-
-    queryset = Parameter.objects.all()
-    serializer_class = ParameterSerializer
+    queryset = ParameterFromAnalogSensorForBBO.objects.all()
+    serializer_class = ParameterFromAnalogSensorForBBOSerializer
     permissions = (permissions.AllowAny,)
 
     async def connect(self, **kwargs):
@@ -58,12 +61,12 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             'status': 'connected'
         }))
 
-    @model_observer(Parameter)
+    @model_observer(ParameterFromAnalogSensorForBBO)
     async def model_change(self, message, observer=None, **kwargs):
         if message:
             await self.send_json(message)
 
     @model_change.serializer
-    def model_serialize(self, instance, action, **kwargs):
+    def model_serialize(self, instance, action, **kwargs) -> dict[str, Any]:
         if action.value == 'create':
-            return dict(data=ParameterSerializer(instance=instance).data, action=action.value)
+            return dict(data=ParameterFromAnalogSensorForBBOSerializer(instance=instance).data, action=action.value)
