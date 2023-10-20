@@ -1,10 +1,11 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import update_last_login
 from rest_framework import serializers
+from rest_framework.relations import StringRelatedField, PrimaryKeyRelatedField
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO
+from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO
 from rest_framework.validators import UniqueTogetherValidator
 from django.utils import dateformat
 from django.conf import settings
@@ -130,6 +131,16 @@ class projValueSerializer(serializers.ModelSerializer):
 
 
 class ParameterFromAnalogSensorForBBOSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = ParameterFromAnalogSensorForBBO
-        fields = '__all__'
+        exclude = ('id',)
+
+
+class BBOSerializer(serializers.ModelSerializer):
+    val = ParameterFromAnalogSensorForBBOSerializer(many=True, read_only=True)
+    class Meta:
+        model = BBO
+        exclude = ('modified_by',)
+
+

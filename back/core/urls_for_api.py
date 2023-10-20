@@ -10,7 +10,7 @@ from .logic_for_bbo import (
     GetProjValueView,
     GetAllBBOProjValueView,
     GetAllBBOLabValueView,
-    ParameterFromAnalogSensorForBBOView
+    ParameterFromAnalogSensorForBBOView, AllParameterFromAnalogSensorForBBO1View
 )
 
 urlpatterns = [

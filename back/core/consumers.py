@@ -11,7 +11,8 @@ from rest_framework.utils.serializer_helpers import ReturnDict
 
 from core.logic_for_bbo import AllParameterFromAnalogSensorForBBO1View
 from .models import Parameter, ParameterFromAnalogSensorForBBO
-from .serializers import ParameterSerializer, ParameterFromAnalogSensorForBBOSerializer
+from .serializers import ParameterSerializer, ParameterFromAnalogSensorForBBOSerializer, BBOSerializer
+
 
 # class ChatConsumer(WebsocketConsumer):
 #     def connect(self):
@@ -50,8 +51,8 @@ from .serializers import ParameterSerializer, ParameterFromAnalogSensorForBBOSer
 
 
 class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
-    queryset = ParameterFromAnalogSensorForBBO.objects.all()
-    serializer_class = ParameterFromAnalogSensorForBBOSerializer
+    serializer_class = BBOSerializer
+    queryset = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:9]
     permissions = (permissions.AllowAny,)
 
     async def connect(self, **kwargs):
@@ -67,6 +68,7 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             await self.send_json(message)
 
     @model_change.serializer
-    def model_serialize(self, instance, action, **kwargs) -> dict[str, Any]:
-        if action.value == 'create':
-            return dict(data=ParameterFromAnalogSensorForBBOSerializer(instance=instance).data, action=action.value)
+    def model_serialize(self, instance, action, **kwargs):
+        if action.value == 'create' and instance.name == 'valve_4':
+            qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:9]
+            return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data, action=action.value,)

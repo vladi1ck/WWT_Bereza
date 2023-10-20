@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainSerializer, TokenObtainPairSerializer
@@ -8,15 +9,16 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
-
+import json
 # Create your views here.
 from rest_framework import viewsets
 from rest_framework.decorators import api_view
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
-from .serializers import (labValueSerializer, projValueSerializer, ParameterFromAnalogSensorForBBOSerializer)
-from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO
+from .serializers import (labValueSerializer, projValueSerializer, ParameterFromAnalogSensorForBBOSerializer,
+                          BBOSerializer)
+from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO
 
 
 class PostLabValueView(APIView):
@@ -260,13 +262,7 @@ class ParameterFromAnalogSensorForBBOView(APIView):
         return Response(response, status=status_code)
 
 
-class AllParameterFromAnalogSensorForBBO1View(APIView):
+class AllParameterFromAnalogSensorForBBO1View(ListCreateAPIView):
     serializer_class = ParameterFromAnalogSensorForBBOSerializer
+    queryset = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1)
 
-    def get_bbo1_data(self):
-        data = ParameterFromAnalogSensorForBBO.objects().filter(bbo_id=1).order_by('time')[:5]
-        serializer_data = self.serializer_class(data, many=True)
-        response = {
-            serializer_data
-        }
-        return response

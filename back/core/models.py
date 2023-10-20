@@ -62,8 +62,8 @@ class Parameter(models.Model):
 
 class BBO(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=255, null=False)
-    modified_by = models.ForeignKey(to=User, on_delete=models.PROTECT, editable=True)
+    name = models.CharField(max_length=255)
+    modified_by = models.ForeignKey(to=User, on_delete=models.CASCADE, editable=True)
     modified_time = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:
@@ -71,7 +71,7 @@ class BBO(models.Model):
 
 
 class LabValue(models.Model):
-    bbo_id = models.ForeignKey(to=BBO, related_name='lab_id', on_delete=models.PROTECT, editable=True, default="")
+    bbo_id = models.ForeignKey(to=BBO, related_name='lab_id', on_delete=models.CASCADE, editable=True, default="")
     doseFromWeight = models.FloatField()
     doseFromVolume = models.FloatField()
     ashPercent = models.FloatField()
@@ -128,5 +128,3 @@ class ParameterFromAnalogSensorForBBO(models.Model):
 
     def __str__(self) -> str:
         return f'{self.bbo_id}'
-
-
