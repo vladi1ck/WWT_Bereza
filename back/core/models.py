@@ -4,6 +4,7 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.contrib.auth.models import AbstractUser, PermissionsMixin
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 from .manager import CustomUserManager
 
@@ -117,14 +118,59 @@ class ProjValue(models.Model):
 
 
 class ParameterFromAnalogSensorForBBO(models.Model):
-    bbo_id = models.ForeignKey(to=BBO, related_name='parameter_analog_id', on_delete=models.CASCADE, editable=True, default="")
+    bbo_id = models.ForeignKey(to=BBO, related_name='parameter_analog_id', on_delete=models.CASCADE, editable=True,
+                               default="")
     name = models.CharField(max_length=255, null=False)
     value = models.FloatField()
     is_main = models.BooleanField(default=False)
     is_masked = models.BooleanField(default=False)
     is_ready = models.BooleanField(default=False)
-    is_accident = models.BooleanField(default=False) #Авария - показания датчика неккоректны
+    is_accident = models.BooleanField(default=False)  # Авария - показания датчика неккоректны
     time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return f'{self.bbo_id}'
+        return f'{self.name}'
+
+
+# Положение затвора - текущая концентрация кислорода
+class ManagementConcentrationFlowForBBO(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='air_concentration_management_id', on_delete=models.CASCADE,
+                               editable=True,
+                               default="")
+    name = models.CharField(max_length=255, null=False)
+    current_value = models.FloatField()
+    given_value = models.FloatField()
+    deviation_rate = models.FloatField()
+    bbo_rate = models.FloatField()
+    timeout = models.FloatField()
+
+    def __str__(self) -> str:
+        return f'{self.name}'
+
+
+# Требуемый объем подачи воздуха воздуходувкой
+class ManagementVolumeFlowForBBO(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='air_volume_management_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    avg_oxygen_rate = models.FloatField()  # записывать значения во вьюхе (где его брать???) при получение создавать?
+    min_avg_oxygen = models.FloatField()
+    max_avg_oxygen = models.FloatField()
+    given_workflow_for_blower = models.FloatField()
+    step_for_setup_blower = models.FloatField()
+    freq_for_setup_blower = models.FloatField()
+    air_consumption = models.FloatField()
+    current_pressure = models.FloatField()
+    timeout = models.FloatField()
+
+
+    def __str__(self) -> str:
+        return f'{self.name}'
+
+
+class CommandForBBO(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='air_command_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    name = models.CharField(max_length=255, null=False) # Название нужной комманды
+    command = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(2)]
+    )

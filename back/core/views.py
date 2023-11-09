@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainSerializer, TokenObtainPairSerializer
@@ -52,7 +53,7 @@ def upldParameter(request):
     return Response (serializer.errors, status=400)
 
 
-class AuthUserLoginView(APIView):
+class AuthUserLoginView(GenericAPIView):
     serializer_class = AuthUserLoginSerializer
     permission_classes = (AllowAny, )
 
@@ -79,7 +80,7 @@ class AuthUserLoginView(APIView):
             return Response(response, status=status_code)
 
 
-class AuthUserRegistrationView(APIView):
+class AuthUserRegistrationView(GenericAPIView):
     serializer_class = AuthUserRegistrationSerializer
     permission_classes = (AllowAny, )
 
@@ -101,7 +102,7 @@ class AuthUserRegistrationView(APIView):
             return Response(response, status=status_code)
 
 
-class UserListView(APIView):
+class UserListView(GenericAPIView):
     serializer_class = UserListSerializer
     permission_classes = (IsAuthenticated,)
 

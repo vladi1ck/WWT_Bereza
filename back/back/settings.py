@@ -33,14 +33,16 @@ ALLOWED_HOSTS = ['*']
 INSTALLED_APPS = [
     'channels',
     'daphne',
+    'rest_framework_swagger',
 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
 
+    'django.contrib.staticfiles',  # required for serving swagger ui's css/js files
+    'drf_yasg',
 
     'rest_framework',
     'corsheaders',
@@ -102,7 +104,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'USER': 'postgres',
         'PASSWORD': '[eqgbplfcrjdjhjlf228',
-        'NAME': 'wwt',
+        'NAME': 'wwt_new',
         'HOST': '127.0.0.1',
         'PORT': '5432',
     }
@@ -181,7 +183,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser'
-     )
+     ),
+    'DEFAULT_SCHEMA_CLASS':
+        'rest_framework.schemas.coreapi.AutoSchema'
+    ,
 
 }
 

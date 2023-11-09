@@ -5,7 +5,7 @@ from rest_framework.relations import StringRelatedField, PrimaryKeyRelatedField
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO
+from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, ManagementConcentrationFlowForBBO
 from rest_framework.validators import UniqueTogetherValidator
 from django.utils import dateformat
 from django.conf import settings
@@ -142,5 +142,11 @@ class BBOSerializer(serializers.ModelSerializer):
     class Meta:
         model = BBO
         exclude = ('modified_by',)
+
+
+class ManagementConcentrationFlowForBBOSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ManagementConcentrationFlowForBBO
+        exclude = ('id',)
 
 

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework.generics import ListAPIView, ListCreateAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainSerializer, TokenObtainPairSerializer
@@ -17,11 +17,11 @@ from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 
 from .serializers import (labValueSerializer, projValueSerializer, ParameterFromAnalogSensorForBBOSerializer,
-                          BBOSerializer)
-from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO
+                          BBOSerializer, ManagementConcentrationFlowForBBOSerializer)
+from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, ManagementConcentrationFlowForBBO
 
 
-class PostLabValueView(APIView):
+class PostLabValueView(GenericAPIView):
     serializer_class = labValueSerializer
     permission_classes = (AllowAny,)
 
@@ -84,7 +84,7 @@ class PostLabValueView(APIView):
         return Response(response, status=status_code)
 
 
-class GetLabValueView(APIView):
+class GetLabValueView(GenericAPIView):
     serializer_class = labValueSerializer
     permission_classes = (AllowAny,)
 
@@ -110,7 +110,7 @@ class GetLabValueView(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class PostProjValueView(APIView):
+class PostProjValueView(GenericAPIView):
     serializer_class = projValueSerializer
     permission_classes = (AllowAny,)
 
@@ -150,7 +150,7 @@ class PostProjValueView(APIView):
         return Response(response, status=status_code)
 
 
-class GetProjValueView(APIView):
+class GetProjValueView(GenericAPIView):
     serializer_class = projValueSerializer
     permission_classes = (AllowAny,)
 
@@ -176,7 +176,7 @@ class GetProjValueView(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class GetAllBBOProjValueView(APIView):
+class GetAllBBOProjValueView(GenericAPIView):
     serializer_class = projValueSerializer
     permission_classes = (AllowAny,)
 
@@ -209,7 +209,7 @@ class GetAllBBOProjValueView(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class GetAllBBOLabValueView(APIView):
+class GetAllBBOLabValueView(GenericAPIView):
     serializer_class = labValueSerializer
     permission_classes = (AllowAny,)
 
@@ -242,7 +242,7 @@ class GetAllBBOLabValueView(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-class ParameterFromAnalogSensorForBBOView(APIView):
+class ParameterFromAnalogSensorForBBOView(GenericAPIView):
     serializer_class = ParameterFromAnalogSensorForBBOSerializer
     permission_classes = (AllowAny,)
 
@@ -266,3 +266,34 @@ class AllParameterFromAnalogSensorForBBO1View(ListCreateAPIView):
     serializer_class = ParameterFromAnalogSensorForBBOSerializer
     queryset = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1)
 
+
+class AirManagerView(GenericAPIView):
+    serializer_class = ManagementConcentrationFlowForBBOSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        values1 = ManagementConcentrationFlowForBBO.objects.all().filter(bbo_id=1).last()
+        serializer1 = self.serializer_class(values1, many=False)
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully fetched values',
+            'data_bbo_1': serializer1.data,
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        serializer = ManagementConcentrationFlowForBBOSerializer(data=data)
+
+        valid = serializer.is_valid(raise_exception=True)
+        if valid:
+            status_code = status.HTTP_200_OK
+            serializer.save()
+
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'message': 'Successfully saved values',
+        }
+        return Response(response, status=status_code)

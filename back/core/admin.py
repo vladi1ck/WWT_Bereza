@@ -1,5 +1,5 @@
 from django.contrib.auth.admin import UserAdmin
-from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO
+from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, ManagementConcentrationFlowForBBO
 from django.contrib import admin
 
 
@@ -8,7 +8,7 @@ class MyUserAdmin(admin.ModelAdmin):
     list_display = ('username',)  # Contain only fields in your `custom-user-model`
     list_filter = ()  # Contain only fields in your `custom-user-model` intended for filtering. Do not include `groups`since you do not have it
     readonly_fields = ["date_joined", ]
-    exclude = ('username',)
+    exclude = ()
     search_fields = ()  # Contain only fields in your `custom-user-model` intended for searching
     ordering = ()  # Contain only fields in your `custom-user-model` intended to ordering
     filter_horizontal = ()  # Leave it empty. You have neither `groups` or `user_permissions`
@@ -35,6 +35,10 @@ class MyLabAdmin(admin.ModelAdmin):
 @admin.register(ParameterFromAnalogSensorForBBO)
 class MyParameterFromAnalogSensorForBBOAdmin(admin.ModelAdmin):
     list_display = ('name', 'bbo_id', 'time')
+
+@admin.register(ManagementConcentrationFlowForBBO)
+class MyManagementAirFlowForBBOAdmin(admin.ModelAdmin):
+    list_display = ('name', 'bbo_id',)
 
 
 admin.site.register(User, MyUserAdmin)
