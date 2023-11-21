@@ -5,7 +5,8 @@ from rest_framework.relations import StringRelatedField, PrimaryKeyRelatedField
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
-from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, ManagementConcentrationFlowForBBO
+from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
+    ManagementConcentrationFlowForBBO, CommandForBBO, Notification
 from rest_framework.validators import UniqueTogetherValidator
 from django.utils import dateformat
 from django.conf import settings
@@ -131,7 +132,6 @@ class projValueSerializer(serializers.ModelSerializer):
 
 
 class ParameterFromAnalogSensorForBBOSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ParameterFromAnalogSensorForBBO
         exclude = ('id',)
@@ -139,6 +139,7 @@ class ParameterFromAnalogSensorForBBOSerializer(serializers.ModelSerializer):
 
 class BBOSerializer(serializers.ModelSerializer):
     val = ParameterFromAnalogSensorForBBOSerializer(many=True, read_only=True)
+
     class Meta:
         model = BBO
         exclude = ('modified_by',)
@@ -147,6 +148,18 @@ class BBOSerializer(serializers.ModelSerializer):
 class ManagementConcentrationFlowForBBOSerializer(serializers.ModelSerializer):
     class Meta:
         model = ManagementConcentrationFlowForBBO
+        exclude = ('id',)
+
+
+class CommandForBBOSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommandForBBO
+        exclude = ('id',)
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
         exclude = ('id',)
 
 

@@ -143,6 +143,7 @@ class ManagementConcentrationFlowForBBO(models.Model):
     deviation_rate = models.FloatField()
     bbo_rate = models.FloatField()
     timeout = models.FloatField()
+    time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return f'{self.name}'
@@ -161,7 +162,7 @@ class ManagementVolumeFlowForBBO(models.Model):
     air_consumption = models.FloatField()
     current_pressure = models.FloatField()
     timeout = models.FloatField()
-
+    time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return f'{self.name}'
@@ -170,7 +171,17 @@ class ManagementVolumeFlowForBBO(models.Model):
 class CommandForBBO(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='air_command_id', on_delete=models.CASCADE, editable=True,
                                default="")
-    name = models.CharField(max_length=255, null=False) # Название нужной комманды
+    name = models.CharField(max_length=255, null=False)  # Название нужной комманды
     command = models.IntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(2)]
-    )
+        validators=[MinValueValidator(-1), MaxValueValidator(1)]
+    )  # -1 - понижать, 0 - ничего, 1 - повышать.
+    time = models.DateTimeField(auto_now_add=True)
+
+
+class Notification(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='notification_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    status_code = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(2)]) # 0 - info, 1 - crit, 2 - accident.
+    title = models.CharField(max_length=255, blank=True)
+    message = models.CharField(max_length=255, blank=True)
+    created_date = models.DateTimeField(auto_now_add=True)

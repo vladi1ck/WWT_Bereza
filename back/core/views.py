@@ -2,7 +2,9 @@ from django.shortcuts import render
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError, AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainSerializer, TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import permissions
 from rest_framework import status
@@ -43,19 +45,20 @@ class ParameterView(viewsets.ModelViewSet):
     serializer_class = ParameterSerializer
     queryset = Parameter.objects.all()
 
+
 @api_view(['POST'])
 def upldParameter(request):
-    data=JSONParser().parse(request)
+    data = JSONParser().parse(request)
     serializer = ParameterSerializerForSave(data=data)
     if serializer.is_valid():
         serializer.save()
-        return Response (serializer.data, status=201)
-    return Response (serializer.errors, status=400)
+        return Response(serializer.data, status=201)
+    return Response(serializer.errors, status=400)
 
 
 class AuthUserLoginView(GenericAPIView):
     serializer_class = AuthUserLoginSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -82,7 +85,7 @@ class AuthUserLoginView(GenericAPIView):
 
 class AuthUserRegistrationView(GenericAPIView):
     serializer_class = AuthUserRegistrationSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -100,6 +103,18 @@ class AuthUserRegistrationView(GenericAPIView):
             }
 
             return Response(response, status=status_code)
+
+
+class LogoutView(GenericAPIView):
+    def post(self, request):
+        try:
+            refresh_token = request.data['refresh_token']
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            return Response("Logout Successful", status=status.HTTP_200_OK)
+        except TokenError:
+            raise AuthenticationFailed("Invalid Token")
 
 
 class UserListView(GenericAPIView):

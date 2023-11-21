@@ -1,5 +1,6 @@
 from django.contrib.auth.admin import UserAdmin
-from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, ManagementConcentrationFlowForBBO
+from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, \
+    ManagementConcentrationFlowForBBO, CommandForBBO, Notification
 from django.contrib import admin
 
 
@@ -40,6 +41,13 @@ class MyParameterFromAnalogSensorForBBOAdmin(admin.ModelAdmin):
 class MyManagementAirFlowForBBOAdmin(admin.ModelAdmin):
     list_display = ('name', 'bbo_id',)
 
+@admin.register(CommandForBBO)
+class MyCommandForBBOAdmin(admin.ModelAdmin):
+    list_display = ('name', 'command', 'bbo_id',)
+
+@admin.register(Notification)
+class MyNotificationAdmin(admin.ModelAdmin):
+    list_display = ('created_date', 'status_code', 'bbo_id', 'message')
 
 admin.site.register(User, MyUserAdmin)
 admin.site.register(Parameter)

@@ -12,7 +12,8 @@ from .logic_for_bbo import (
     GetProjValueView,
     GetAllBBOProjValueView,
     GetAllBBOLabValueView,
-    ParameterFromAnalogSensorForBBOView, AllParameterFromAnalogSensorForBBO1View, AirManagerView
+    ParameterFromAnalogSensorForBBOView, AllParameterFromAnalogSensorForBBO1View,
+    AirManagerView, CommandForBBOView
 )
 
 schema_view = get_swagger_view(title='Pastebin API')
@@ -27,6 +28,7 @@ urlpatterns = [
     path('post_analog_parameter', ParameterFromAnalogSensorForBBOView.as_view()),
     path('get_manager_air_flow', AirManagerView.as_view()),
     path('post_manager_air_flow', AirManagerView.as_view()),
+    path('post_command', CommandForBBOView.as_view()),
     path('swagger', schema_view),
 
 ]
