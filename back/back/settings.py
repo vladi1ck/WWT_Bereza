@@ -31,10 +31,11 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    # 'drf_yasg',
     'channels',
     'daphne',
     'rest_framework_swagger',
-
+    'core',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,13 +43,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
 
     'django.contrib.staticfiles',  # required for serving swagger ui's css/js files
-    'drf_yasg',
+
 
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-    'core',
+
 
 ]
 
@@ -159,8 +160,6 @@ CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 REST_FRAMEWORK = {
     'DATETIME_INPUT_FORMATS': [("%d.%m.%Y %H:%M:%S"),],
     'DATETIME_OUTPUT_FORMATS': [("%d.%m.%Y %H:%M:%S"),],
@@ -182,7 +181,8 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PARSER_CLASSES': (
         'rest_framework.parsers.FormParser',
-        'rest_framework.parsers.MultiPartParser'
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.JSONParser',
      ),
     'DEFAULT_SCHEMA_CLASS':
         'rest_framework.schemas.coreapi.AutoSchema'

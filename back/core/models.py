@@ -142,6 +142,7 @@ class ManagementConcentrationFlowForBBO(models.Model):
     given_value = models.FloatField()
     deviation_rate = models.FloatField()
     bbo_rate = models.FloatField()
+    is_not_accident = models.BooleanField(default=True)
     timeout = models.FloatField()
     time = models.DateTimeField(auto_now_add=True)
 
