@@ -22,6 +22,7 @@ class CustomUserManager(BaseUserManager):
 
     def create_superuser(self, username, password, **extra_fields):
         extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role', 1)
 
         if extra_fields.get('role') != 1:

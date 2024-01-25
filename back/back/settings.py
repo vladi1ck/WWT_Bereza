@@ -31,7 +31,7 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
-    # 'drf_yasg',
+    'drf_yasg',
     'channels',
     'daphne',
     'rest_framework_swagger',
