@@ -149,7 +149,7 @@ def start(sender, instance, **kwargs):
 def create_notification(sender, instance, **kwargs):
     if instance.name == 'OVP' and instance.value <= -200.0:
         Notification.objects.create(
-            bbo_id=instance.bbo_id.value,
+            bbo_id=instance.bbo_id,
             status_code=0,
             title=instance.name,
             message='Возможно идет сброс сточных вод от промышленных промпредприятий, отобрать анализы '
