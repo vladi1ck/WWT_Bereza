@@ -256,6 +256,7 @@ class ParameterFromAnalogSensorForBBOView(GenericAPIView):
             status_code = status.HTTP_200_OK
             serializer.save()
 
+
             # if data['name'] == 'OVP' and data['value'] <= -200.0:
             #     value = data['value']
             #     Notification.objects.create(
@@ -320,10 +321,12 @@ class AirManagerView(GenericAPIView):
         return Response(response, status=status.HTTP_200_OK)
 
     def post(self, request):
+
         data = JSONParser().parse(request)
+        nam_6 = data['name'][:6]
         data['current_value'] = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'],
-                                                                               name=data['name']).last().value
-        if ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'], name=data['name']).last().is_accident:
+                                                                               name=nam_6).last().value
+        if ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'], name=nam_6).last().is_accident:
             data['is_not_accident'] = False
         else:
             data['is_not_accident'] = True

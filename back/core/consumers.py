@@ -89,30 +89,29 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
 
     @model_change.serializer
     def model_serialize(self, instance, action, **kwargs):
-        if action.value == 'create' and str(instance.bbo_id) == 'BBO1' and instance.name == 'valve_4':
-            qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:12]
-            qs1 = CommandForBBO.objects.filter(bbo_id=1).last()
-            return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
-                        command=CommandForBBOSerializer(qs1, many=False).data,
-                        action=action.value, )
-        if action.value == 'create' and str(instance.bbo_id) == 'BBO2' and instance.name == 'silt_level':
-            qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
-            qs1 = CommandForBBO.objects.filter(bbo_id=2).last()
-            return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
-                        command=CommandForBBOSerializer(qs1, many=False).data,
-                        action=action.value, )
-        if action.value == 'create' and str(instance.bbo_id) == 'BBO3' and instance.name == 'silt_level':
-            qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
-            qs1 = CommandForBBO.objects.filter(bbo_id=3).last()
-            return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
-                        command=CommandForBBOSerializer(qs1, many=False).data,
-                        action=action.value, )
+        # if action.value == 'create' and str(instance.bbo_id) == 'BBO1' and instance.name == 'valve_4':
+        #     qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:12]
+        #     return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
+        #     )
+        # if action.value == 'create' and str(instance.bbo_id) == 'BBO2' and instance.name == 'silt_level':
+        #     qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
+        #     return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
+        #     )
+        # if action.value == 'create' and str(instance.bbo_id) == 'BBO3' and instance.name == 'silt_level':
+        #     qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
+        #     return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
+        #     )
         if action.value == 'create' and str(instance.bbo_id) == 'BBO4' and instance.name == 'silt_level':
-            qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:5]
-            qs1 = CommandForBBO.objects.filter(bbo_id=4).last()
-            return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
-                        command=CommandForBBOSerializer(qs1, many=False).data,
-                        action=action.value, )
+            qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:12]
+            qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
+            qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
+            qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:5]
+            return dict(
+                bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
+                bbo2=ParameterFromAnalogSensorForBBOSerializer(qs2, many=True).data,
+                bbo3=ParameterFromAnalogSensorForBBOSerializer(qs3, many=True).data,
+                bbo4=ParameterFromAnalogSensorForBBOSerializer(qs4, many=True).data,
+                )
 
 # TODO веб сокет для отправки на клиент - надо написать, ниже тока шаблон как для аналогов
 class CommandForBBOConsumer(ListModelMixin, GenericAsyncAPIConsumer):

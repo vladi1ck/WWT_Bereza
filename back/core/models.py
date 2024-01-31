@@ -64,6 +64,7 @@ class Parameter(models.Model):
 class BBO(models.Model):
     id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255)
+    rus_name = models.CharField(max_length=255, null=True)
     modified_by = models.ForeignKey(to=User, on_delete=models.CASCADE, editable=True)
     modified_time = models.DateTimeField(auto_now=True)
 
@@ -127,6 +128,7 @@ class ParameterFromAnalogSensorForBBO(models.Model):
     is_ready = models.BooleanField(default=False)
     is_accident = models.BooleanField(default=False)  # Авария - показания датчика неккоректны
     time = models.DateTimeField(auto_now_add=True)
+    rus_name = models.CharField(max_length=255, null=True)
 
     def __str__(self) -> str:
         return f'{self.name}'
