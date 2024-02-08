@@ -30,11 +30,23 @@ def data_func_for_notification():
     return data
 
 def data_func_for_parameter():
-    queryset = ParameterFromAnalogSensorForBBO.objects.all()
-    data = []
-    for item in range(27):
-        data.insert(item, queryset.order_by('-time')[item], )
-    return data
+    qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:9]
+    qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
+    qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
+    qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:5]
+    qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:5]
+    return dict(
+        bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
+        bbo2=ParameterFromAnalogSensorForBBOSerializer(qs2, many=True).data,
+        bbo3=ParameterFromAnalogSensorForBBOSerializer(qs3, many=True).data,
+        bbo4=ParameterFromAnalogSensorForBBOSerializer(qs4, many=True).data,
+        common=ParameterFromAnalogSensorForBBOSerializer(qs5, many=True).data,
+    )
+    # queryset = ParameterFromAnalogSensorForBBO.objects.all()
+    # data = []
+    # for item in range(27):
+    #     data.insert(item, queryset.order_by('-time')[item], )
+    # return data
 
 class AirFlowConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     serializer_class = ManagementConcentrationFlowForBBOSerializer
@@ -76,11 +88,11 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         async_function = sync_to_async(data_func_for_parameter)
         ans = loop.create_task(async_function())
         await ans
-        answer1 = dict(
-            data=ParameterFromAnalogSensorForBBOSerializer(instance=ans.result(), many=True).data,
-        )
+        # answer1 = dict(
+        #     data=ParameterFromAnalogSensorForBBOSerializer(instance=ans.result(), many=True).data,
+        # )
 
-        await self.send_json(answer1)
+        await self.send_json(ans.result())
 
     @model_observer(ParameterFromAnalogSensorForBBO)
     async def model_change(self, message, observer=None, **kwargs):
@@ -102,15 +114,17 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         #     return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
         #     )
         if action.value == 'create' and str(instance.bbo_id) == 'BBO4' and instance.name == 'silt_level':
-            qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:12]
+            qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:9]
             qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
             qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
             qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:5]
+            qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:5]
             return dict(
                 bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
                 bbo2=ParameterFromAnalogSensorForBBOSerializer(qs2, many=True).data,
                 bbo3=ParameterFromAnalogSensorForBBOSerializer(qs3, many=True).data,
                 bbo4=ParameterFromAnalogSensorForBBOSerializer(qs4, many=True).data,
+                common=ParameterFromAnalogSensorForBBOSerializer(qs5, many=True).data,
                 )
 
 # TODO веб сокет для отправки на клиент - надо написать, ниже тока шаблон как для аналогов

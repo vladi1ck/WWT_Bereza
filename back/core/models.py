@@ -72,6 +72,10 @@ class BBO(models.Model):
         return f'{self.name}'
 
 
+class WorkMode(models.Model):
+    mode = models.PositiveSmallIntegerField(default=0)  # 0 - Локальный, 1 - Автоматический
+    time = models.DateTimeField(auto_now_add=True)
+
 class LabValue(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='lab_id', on_delete=models.CASCADE, editable=True, default="")
     doseFromWeight = models.FloatField()
@@ -184,7 +188,8 @@ class CommandForBBO(models.Model):
 class Notification(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='notification_id', on_delete=models.CASCADE, editable=True,
                                default="")
-    status_code = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(2)]) # 0 - info, 1 - crit, 2 - accident.
+    status_code = models.IntegerField(
+        validators=[MinValueValidator(0), MaxValueValidator(2)])  # 0 - info, 1 - crit, 2 - accident.
     title = models.CharField(max_length=255, blank=True)
     message = models.CharField(max_length=255, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)

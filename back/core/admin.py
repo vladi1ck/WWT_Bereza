@@ -39,11 +39,11 @@ class MyParameterFromAnalogSensorForBBOAdmin(admin.ModelAdmin):
 
 @admin.register(ManagementConcentrationFlowForBBO)
 class MyManagementAirFlowForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'bbo_id',)
+    list_display = ('name', 'bbo_id','time')
 
 @admin.register(CommandForBBO)
 class MyCommandForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'command', 'bbo_id',)
+    list_display = ('name', 'command','time', 'bbo_id',)
 
 @admin.register(Notification)
 class MyNotificationAdmin(admin.ModelAdmin):

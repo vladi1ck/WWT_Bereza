@@ -1,3 +1,5 @@
+from asgiref.sync import sync_to_async
+from async_signals import Signal
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -21,7 +23,6 @@ from .serializers import (labValueSerializer, projValueSerializer, ParameterFrom
                           NotificationSerializer)
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
     ManagementConcentrationFlowForBBO, Notification
-
 
 class PostLabValueView(GenericAPIView):
     serializer_class = labValueSerializer
@@ -336,6 +337,7 @@ class AirManagerView(GenericAPIView):
         if valid:
             status_code = status.HTTP_200_OK
             serializer.save()
+            my_signal = Signal(debug=True)
 
         response = {
             'success': True,

@@ -4,11 +4,14 @@ import multiprocessing
 import threading
 import time
 
-# from async_signals import Signal, receiver
+from asgiref.sync import sync_to_async, async_to_sync
+from async_signals import Signal, receiver
 
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.contrib.auth.models import User
-from django.dispatch import receiver
+
+from . import logic_for_bbo
+# from django.dispatch import receiver
 
 from .logic_for_bbo import ParameterFromAnalogSensorForBBOView
 from .models import ManagementConcentrationFlowForBBO, CommandForBBO, BBO, Notification, \
@@ -17,9 +20,10 @@ from .models import ManagementConcentrationFlowForBBO, CommandForBBO, BBO, Notif
 live_1_1 = True
 live_1_2 = True
 live_1_3 = True
+live_1_4 = True
 
 
-class CommandThread(multiprocessing.Process):
+class CommandThread(threading.Thread):
     def __init__(self, instance, **kwargs):
         self.instance = instance
         super(CommandThread, self).__init__(**kwargs)
@@ -28,10 +32,10 @@ class CommandThread(multiprocessing.Process):
         print(self.instance.name)
 
         print(f'In work, remaining {self.instance.timeout * 60}sec')
-        oxy1 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id, name='oxygen').last()
-        oxy2 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id, name='oxygen').last()
-        oxy3 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id, name='oxygen').last()
-        oxy4 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id, name='oxygen').last()
+        oxy1 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
+        oxy2 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
+        oxy3 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
+        oxy4 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
         oxygen_1_1 = [oxy1, oxy2, oxy3]
         oxygen_1_2 = [oxy1]
         oxygen_1_3 = [oxy2, oxy3]
@@ -74,7 +78,6 @@ class CommandThread(multiprocessing.Process):
             deviation_rate_1_2 = deviation_rate_1_2 + int(i.deviation_rate)
             given_value_1_2 = given_value_1_2 + int(i.given_value)
 
-
         # for i in itertools.compress(oxygen_1_3, accidents_1_3):
         #     average_1_3 = average_1_3 + int(i.current_value)
         #     deviation_rate_1_3 = deviation_rate_1_3 + int(i.deviation_rate)
@@ -106,41 +109,74 @@ class CommandThread(multiprocessing.Process):
             return -9999
 
 
+def analysis_valve(instance):
+    print(instance.name)
+
+    print(f'In work, remaining {instance.timeout * 60}sec')
+
+    if instance.is_not_accident:
+
+        min_val = instance.given_value - instance.deviation_rate
+        max_val = instance.given_value + instance.deviation_rate
+
+        time.sleep(instance.timeout * 60)
+        if instance.current_value < min_val:
+            print(f'{instance.name} - COMMAND: UP')
+            result = 1
+        elif instance.current_value > max_val:
+            print(f'{instance.name} - COMMAND: DOWN')
+            result = -1
+        elif min_val < instance.current_value < max_val:
+            print(f'{instance.name} - COMMAND: Nothing')
+            result = 0
+        else:
+            print(f'{instance.name} - COMMAND: Error')
+            result = -9999
+
+        CommandForBBO.objects.create(
+            bbo_id=instance.bbo_id,
+            name=instance.name,
+            command=result
+        )
+
+
 @receiver(signal=post_save, sender=ManagementConcentrationFlowForBBO)
-def start(sender, instance, **kwargs):
+def handler(sender, instance, **kwargs):
     global live_1_1
     global live_1_2
     global live_1_3
-    th1 = CommandThread(instance)
-    th2 = CommandThread(instance)
-    th3 = CommandThread(instance)
+    global live_1_4
+
+    th1 = threading.Thread(target=analysis_valve, args=(instance,))
+    th2 = threading.Thread(target=analysis_valve, args=(instance,))
+    th3 = threading.Thread(target=analysis_valve, args=(instance,))
+    th4 = threading.Thread(target=analysis_valve, args=(instance,))
 
     if instance.name == 'oxygen_1_1' and live_1_1:
         live_1_1 = False
-        CommandForBBO.objects.create(
-            bbo_id=instance.bbo_id,
-            name=instance.name,
-            command=th1.run()
-        )
+        th1.start()
 
-    if instance.name == 'oxygen_1_2' and live_1_2:
+    elif instance.name == 'oxygen_1_2' and live_1_2:
         live_1_2 = False
-        CommandForBBO.objects.create(
-            bbo_id=instance.bbo_id,
-            name=instance.name,
-            command=th2.run()
-        )
+        th2.start()
 
-    if instance.name == 'oxygen_1_3' and live_1_3:
+    elif instance.name == 'oxygen_1_3' and live_1_3:
         live_1_3 = False
-        th3.run()
+        th3.start()
+
+    elif instance.name == 'oxygen_1_4' and live_1_4:
+        live_1_4 = False
+        th4.start()
+
     try:
         if th1.is_alive():
             th1.join()
-        if th1.is_alive():
+        if th2.is_alive():
             th2.join()
-        if th1.is_alive():
+        if th3.is_alive():
             th3.join()
+        if th4.is_alive():
+            th4.join()
 
     except Exception as _ex:
         print(_ex)
@@ -148,6 +184,7 @@ def start(sender, instance, **kwargs):
         live_1_1 = True
         live_1_2 = True
         live_1_3 = True
+        live_1_4 = True
 
 
 @receiver(signal=post_save, sender=ParameterFromAnalogSensorForBBO)
@@ -203,27 +240,27 @@ def create_notification(sender, instance, **kwargs):
                 message=f'[{BBO.objects.get(id=5)}] На данный момент отсутствует необходимость в откачке избыточного аткивного ила'
             )
 
+
 @receiver(signal=post_save, sender=CommandForBBO)
 def create_notification(sender, instance, **kwargs):
-    if instance.name == 'oxygen' and instance.command == 1:
+    if instance.command == 1:
         Notification.objects.create(
             bbo_id=instance.bbo_id,
             status_code=0,
             title=instance.name,
             message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Увеличьте процент открытия затвора подачи воздуха'
         )
-    elif instance.name == 'oxygen' and instance.command == -1:
+    elif instance.command == -1:
         Notification.objects.create(
             bbo_id=instance.bbo_id,
             status_code=0,
             title=instance.name,
             message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Уменьшите процент открытия затвора подачи воздуха'
         )
-    elif instance.name == 'oxygen' and instance.command == 0:
+    elif instance.command == 0:
         Notification.objects.create(
             bbo_id=instance.bbo_id,
             status_code=0,
             title=instance.name,
             message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Не требуется регулировка затвора подачи воздуха'
         )
-
