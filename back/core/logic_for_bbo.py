@@ -1,5 +1,8 @@
+import datetime
+
 from asgiref.sync import sync_to_async
 from async_signals import Signal
+from django.http import JsonResponse
 from django.shortcuts import render
 from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -23,6 +26,7 @@ from .serializers import (labValueSerializer, projValueSerializer, ParameterFrom
                           NotificationSerializer)
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
     ManagementConcentrationFlowForBBO, Notification
+
 
 class PostLabValueView(GenericAPIView):
     serializer_class = labValueSerializer
@@ -245,6 +249,34 @@ class GetAllBBOLabValueView(GenericAPIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+def stat_detail(request, ):
+    bbo_id = request.GET.getlist('bbo_id')
+    name = request.GET.getlist('name')
+    first_date = request.GET.get('first_date')
+    last_date = request.GET.get('last_date')
+    print(len(bbo_id))
+    stat = []
+    if name and bbo_id is not None:
+        for i in range(len(bbo_id)):
+            for j in range(len(name)):
+                if first_date is None:
+                    first_date = '2000-01-01 00:00'
+                if last_date is None:
+                    last_date = datetime.datetime.now()
+                try:
+                    stat.append(ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=int(bbo_id[i]), name=name[j], time__range=[first_date, last_date]))
+                except ParameterFromAnalogSensorForBBO.DoesNotExist:
+                    return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        stat_serializer = []
+        if request.method == 'GET':
+            for i in range(len(stat)):
+                stat_serializer.append(ParameterFromAnalogSensorForBBOSerializer(stat[i], many=True).data)
+            return JsonResponse({'data':stat_serializer})
+    else:
+        return JsonResponse({'msg':'Error, check data'})
+
+
 class ParameterFromAnalogSensorForBBOView(GenericAPIView):
     serializer_class = ParameterFromAnalogSensorForBBOSerializer
     permission_classes = (AllowAny,)
@@ -256,7 +288,6 @@ class ParameterFromAnalogSensorForBBOView(GenericAPIView):
         if valid:
             status_code = status.HTTP_200_OK
             serializer.save()
-
 
             # if data['name'] == 'OVP' and data['value'] <= -200.0:
             #     value = data['value']
