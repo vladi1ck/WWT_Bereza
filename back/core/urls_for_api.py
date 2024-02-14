@@ -31,6 +31,6 @@ urlpatterns = [
     path('post_command', CommandForBBOView.as_view()),
     path('swagger', schema_view),
     re_path(r'stat', logic_for_bbo.stat_detail),
-    re_path(r'stat/(?P<bbo_id>.+)/(?P<name>.+)/(?P<first_date>.+)/(?P<last_date>.+)$', logic_for_bbo.stat_detail),
+    # re_path(r'stat/(?P<bbo_id>.+)/(?P<name>.+)/(?P<first_date>.+)/(?P<last_date>.+)$', logic_for_bbo.stat_detail),
 
 ]

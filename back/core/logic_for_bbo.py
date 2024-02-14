@@ -255,8 +255,7 @@ def stat_detail(request, ):
     name = request.GET.getlist('name')
     first_date = request.GET.get('first_date')
     last_date = request.GET.get('last_date')
-    print(len(bbo_id))
-    stat = []
+    stat = {}
     if name and bbo_id is not None:
         for i in range(len(bbo_id)):
             for j in range(len(name)):
@@ -265,16 +264,25 @@ def stat_detail(request, ):
                 if last_date is None:
                     last_date = datetime.datetime.now()
                 try:
-                    stat.append(ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=int(bbo_id[i]), name=name[j], time__range=[first_date, last_date]))
+                    stat[f'bbo_{bbo_id[i]}_{name[j]}'] = (
+                        ParameterFromAnalogSensorForBBOSerializer(
+                            (
+                                ParameterFromAnalogSensorForBBO.objects.filter(
+                                    bbo_id=int(bbo_id[i]),
+                                    name=name[j],
+                                    time__range=[first_date, last_date]
+                                )
+                            ),
+                            many=True).data)
                 except ParameterFromAnalogSensorForBBO.DoesNotExist:
                     return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_404_NOT_FOUND)
         stat_serializer = []
         if request.method == 'GET':
-            for i in range(len(stat)):
-                stat_serializer.append(ParameterFromAnalogSensorForBBOSerializer(stat[i], many=True).data)
-            return JsonResponse({'data':stat_serializer})
+            # for i in range(len(stat)):
+            #     stat_serializer.append(ParameterFromAnalogSensorForBBOSerializer(stat[i], many=True).data)
+            return JsonResponse({'data': stat})
     else:
-        return JsonResponse({'msg':'Error, check data'})
+        return JsonResponse({'msg': 'Error, check data'})
 
 
 class ParameterFromAnalogSensorForBBOView(GenericAPIView):
