@@ -274,13 +274,18 @@ def stat_detail(request, ):
                                 )
                             ),
                             many=True).data)
+                    if not stat[f'bbo_{bbo_id[i]}_{name[j]}']:
+                        del stat[f'bbo_{bbo_id[i]}_{name[j]}']
                 except ParameterFromAnalogSensorForBBO.DoesNotExist:
                     return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_404_NOT_FOUND)
         stat_serializer = []
         if request.method == 'GET':
-            # for i in range(len(stat)):
-            #     stat_serializer.append(ParameterFromAnalogSensorForBBOSerializer(stat[i], many=True).data)
-            return JsonResponse({'data': stat})
+            if stat == {}:
+                return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                # for i in range(len(stat)):
+                #     stat_serializer.append(ParameterFromAnalogSensorForBBOSerializer(stat[i], many=True).data)
+                return JsonResponse({'data': stat})
     else:
         return JsonResponse({'msg': 'Error, check data'})
 
