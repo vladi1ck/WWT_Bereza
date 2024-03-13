@@ -302,40 +302,6 @@ class ParameterFromAnalogSensorForBBOView(GenericAPIView):
             status_code = status.HTTP_200_OK
             serializer.save()
 
-            # if data['name'] == 'OVP' and data['value'] <= -200.0:
-            #     value = data['value']
-            #     Notification.objects.create(
-            #         bbo_id=BBO.objects.get(id=data['bbo_id']),
-            #         status_code=0,
-            #         title=data['name'],
-            #         message='Возможно идет сброс сточных вод от промышленных промпредприятий, отобрать анализы '
-            #                 'на входе'
-            #     )
-            #
-            # if data['name'] == 'acidity' and (data['value'] <= 6.5 or data['value'] >= 8.5):
-            #     Notification.objects.create(
-            #         bbo_id=BBO.objects.get(id=data['bbo_id']),
-            #         status_code=0,
-            #         title=data['name'],
-            #         message='Необходимо провести обследование на наличие сброса промышленных сточных вод, '
-            #                 'при возможности запустить резервный осветлитель-перегниватель'
-            #     )
-            #
-            # if data['name'] == 'temperature' and data['value'] <= 25.0:
-            #     Notification.objects.create(
-            #         bbo_id=BBO.objects.get(id=data['bbo_id']),
-            #         status_code=0,
-            #         title=data['name'],
-            #         message='Необходимо обратить внимание на интенсивность процесса денитрификации'
-            #     )
-            #
-            # if data['name'] == 'turbidity' and data['value'] <= 2.0:
-            #     Notification.objects.create(
-            #         bbo_id=BBO.objects.get(id=data['bbo_id']),
-            #         status_code=0,
-            #         title=data['name'],
-            #         message='Необходиомо перераспределить потоки активного ила по биоблокам'
-            #     )
 
         response = {
             'success': True,

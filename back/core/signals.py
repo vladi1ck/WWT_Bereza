@@ -23,90 +23,103 @@ live_1_3 = True
 live_1_4 = True
 
 
-class CommandThread(threading.Thread):
-    def __init__(self, instance, **kwargs):
-        self.instance = instance
-        super(CommandThread, self).__init__(**kwargs)
+# class CommandThread(threading.Thread):
+#     def __init__(self, instance, **kwargs):
+#         self.instance = instance
+#         super(CommandThread, self).__init__(**kwargs)
+#
+#     def run(self):
+#         print(self.instance.name)
+#
+#         print(f'In work, remaining {self.instance.timeout * 60}sec')
+#         oxy1 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
+#         oxy2 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
+#         oxy3 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
+#         oxy4 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
+#         oxygen_1_1 = [oxy1, oxy2, oxy3]
+#         oxygen_1_2 = [oxy1]
+#         oxygen_1_3 = [oxy2, oxy3]
+#         # accidents_1_1 = [oxy1.is_not_accident, oxy2.is_not_accident, oxy3.is_not_accident]
+#         accidents_1_2 = [oxy1.is_not_accident]
+#         # accidents_1_3 = [oxy2.is_not_accident, oxy3.is_not_accident]
+#         average = 0
+#         deviation_rate = 0
+#         given_value = 0
+#         average_1_1 = 0
+#         average_1_2 = 0
+#         average_1_3 = 0
+#         deviation_rate_1_1 = 0
+#         deviation_rate_1_2 = 0
+#         deviation_rate_1_3 = 0
+#         given_value_1_1 = 0
+#         given_value_1_2 = 0
+#         given_value_1_3 = 0
+#         try:
+#             middle_requirement_oxygen_1 = oxy1.bbo_rate * (oxy1.current_value - oxy1.given_value)
+#             middle_requirement_oxygen_2 = oxy2.bbo_rate * (oxy2.current_value - oxy2.given_value)
+#             middle_requirement_oxygen_3 = oxy3.bbo_rate * (oxy3.current_value - oxy3.given_value)
+#             middle_requirement_oxygen_4 = oxy4.bbo_rate * (oxy4.current_value - oxy4.given_value)
+#         except Exception as ex:
+#             print(ex)
+#             middle_requirement_oxygen_1 = 0
+#             middle_requirement_oxygen_2 = 0
+#             middle_requirement_oxygen_3 = 0
+#             middle_requirement_oxygen_4 = 0
+#         middle_requirement_oxygen = (middle_requirement_oxygen_1 + middle_requirement_oxygen_2 +
+#                                      middle_requirement_oxygen_3 + middle_requirement_oxygen_4)
+#         print(middle_requirement_oxygen)
+#         # for i in itertools.compress(oxygen_1_1, accidents_1_1):
+#         #     average_1_1 = average_1_1 + int(i.current_value)
+#         #     deviation_rate_1_1 = deviation_rate_1_1 + int(i.deviation_rate)
+#         #     given_value_1_1 = given_value_1_1 + int(i.given_value)
+#
+#         for i in itertools.compress(oxygen_1_2, accidents_1_2):
+#             average_1_2 = average_1_2 + int(i.current_value)
+#             deviation_rate_1_2 = deviation_rate_1_2 + int(i.deviation_rate)
+#             given_value_1_2 = given_value_1_2 + int(i.given_value)
+#
+#         # for i in itertools.compress(oxygen_1_3, accidents_1_3):
+#         #     average_1_3 = average_1_3 + int(i.current_value)
+#         #     deviation_rate_1_3 = deviation_rate_1_3 + int(i.deviation_rate)
+#         #     given_value_1_3 = given_value_1_3 + int(i.given_value)
+#
+#         if self.instance.name == 'oxygen_1_2' or 'oxygen_2_2' or 'oxygen_3_2':
+#             average = average_1_2
+#             deviation_rate = deviation_rate_1_2
+#             given_value = given_value_1_2
+#             pass
+#
+#         else:
+#             average = 0
+#             deviation_rate = 0
+#             given_value = 0
+#
+#         time.sleep(self.instance.timeout * 60)
+#         if average < given_value - deviation_rate:
+#             print(f'{self.instance.name} - COMMAND: UP')
+#             return 1
+#         elif average > given_value + deviation_rate:
+#             print(f'{self.instance.name} - COMMAND: DOWN')
+#             return -1
+#         elif average in range(given_value - deviation_rate, given_value + deviation_rate):
+#             print(f'{self.instance.name} - COMMAND: Nothing')
+#             return 0
+#         else:
+#             print(f'{self.instance.name} - COMMAND: Error')
+#             return -9999
 
-    def run(self):
-        print(self.instance.name)
 
-        print(f'In work, remaining {self.instance.timeout * 60}sec')
-        oxy1 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-        oxy2 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-        oxy3 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-        oxy4 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-        oxygen_1_1 = [oxy1, oxy2, oxy3]
-        oxygen_1_2 = [oxy1]
-        oxygen_1_3 = [oxy2, oxy3]
-        # accidents_1_1 = [oxy1.is_not_accident, oxy2.is_not_accident, oxy3.is_not_accident]
-        accidents_1_2 = [oxy1.is_not_accident]
-        # accidents_1_3 = [oxy2.is_not_accident, oxy3.is_not_accident]
-        average = 0
-        deviation_rate = 0
-        given_value = 0
-        average_1_1 = 0
-        average_1_2 = 0
-        average_1_3 = 0
-        deviation_rate_1_1 = 0
-        deviation_rate_1_2 = 0
-        deviation_rate_1_3 = 0
-        given_value_1_1 = 0
-        given_value_1_2 = 0
-        given_value_1_3 = 0
-        try:
-            middle_requirement_oxygen_1 = oxy1.bbo_rate * (oxy1.current_value - oxy1.given_value)
-            middle_requirement_oxygen_2 = oxy2.bbo_rate * (oxy2.current_value - oxy2.given_value)
-            middle_requirement_oxygen_3 = oxy3.bbo_rate * (oxy3.current_value - oxy3.given_value)
-            middle_requirement_oxygen_4 = oxy4.bbo_rate * (oxy4.current_value - oxy4.given_value)
-        except Exception as ex:
-            print(ex)
-            middle_requirement_oxygen_1 = 0
-            middle_requirement_oxygen_2 = 0
-            middle_requirement_oxygen_3 = 0
-            middle_requirement_oxygen_4 = 0
-        middle_requirement_oxygen = (middle_requirement_oxygen_1 + middle_requirement_oxygen_2 +
-                                     middle_requirement_oxygen_3 + middle_requirement_oxygen_4)
-        print(middle_requirement_oxygen)
-        # for i in itertools.compress(oxygen_1_1, accidents_1_1):
-        #     average_1_1 = average_1_1 + int(i.current_value)
-        #     deviation_rate_1_1 = deviation_rate_1_1 + int(i.deviation_rate)
-        #     given_value_1_1 = given_value_1_1 + int(i.given_value)
+def calculate_avg_oxygen():
+    oxygen = []
 
-        for i in itertools.compress(oxygen_1_2, accidents_1_2):
-            average_1_2 = average_1_2 + int(i.current_value)
-            deviation_rate_1_2 = deviation_rate_1_2 + int(i.deviation_rate)
-            given_value_1_2 = given_value_1_2 + int(i.given_value)
+    for i in range(4):
+        oxy = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=i+1).last()
+        iteration = oxy.bbo_rate * (oxy.current_value - oxy.given_value)
+        oxygen.insert(i, iteration)
+        print(iteration)
 
-        # for i in itertools.compress(oxygen_1_3, accidents_1_3):
-        #     average_1_3 = average_1_3 + int(i.current_value)
-        #     deviation_rate_1_3 = deviation_rate_1_3 + int(i.deviation_rate)
-        #     given_value_1_3 = given_value_1_3 + int(i.given_value)
-
-        if self.instance.name == 'oxygen_1_2' or 'oxygen_2_2' or 'oxygen_3_2':
-            average = average_1_2
-            deviation_rate = deviation_rate_1_2
-            given_value = given_value_1_2
-            pass
-
-        else:
-            average = 0
-            deviation_rate = 0
-            given_value = 0
-
-        time.sleep(self.instance.timeout * 60)
-        if average < given_value - deviation_rate:
-            print(f'{self.instance.name} - COMMAND: UP')
-            return 1
-        elif average > given_value + deviation_rate:
-            print(f'{self.instance.name} - COMMAND: DOWN')
-            return -1
-        elif average in range(given_value - deviation_rate, given_value + deviation_rate):
-            print(f'{self.instance.name} - COMMAND: Nothing')
-            return 0
-        else:
-            print(f'{self.instance.name} - COMMAND: Error')
-            return -9999
+    avg_oxy_rate = sum(oxygen)
+    print(f'Средний кислород - {avg_oxy_rate}')
 
 
 def analysis_valve(instance):
@@ -264,3 +277,5 @@ def create_notification(sender, instance, **kwargs):
             title=instance.name,
             message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Не требуется регулировка затвора подачи воздуха'
         )
+    if instance.name == 'oxygen_1_4':
+        calculate_avg_oxygen()
