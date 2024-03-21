@@ -23,9 +23,10 @@ from rest_framework.response import Response
 
 from .serializers import (labValueSerializer, projValueSerializer, ParameterFromAnalogSensorForBBOSerializer,
                           BBOSerializer, ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer,
-                          NotificationSerializer)
+                          NotificationSerializer, ManagementRecycleForBBOSerializer,
+                          ManagementVolumeFlowForBBOSerializer)
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
-    ManagementConcentrationFlowForBBO, Notification
+    ManagementConcentrationFlowForBBO, Notification, ManagementRecycleForBBO
 
 
 class PostLabValueView(GenericAPIView):
@@ -296,12 +297,30 @@ class ParameterFromAnalogSensorForBBOView(GenericAPIView):
 
     def post(self, request):
         data = JSONParser().parse(request)
+        for i in range(len(data)):
+            # print(request.data[f'bbo{i+1}'])
+
+            serializer = self.serializer_class(data=data[i])
+            valid = serializer.is_valid(raise_exception=True)
+
+            if valid:
+                status_code = status.HTTP_200_OK
+                serializer.save()
+
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'message': 'Successfully saved parameter values',
+        }
+        return Response(response, status=status_code)
+
+    def popost(self, request):
+        data = JSONParser().parse(request)
         serializer = ParameterFromAnalogSensorForBBOSerializer(data=data)
         valid = serializer.is_valid(raise_exception=True)
         if valid:
             status_code = status.HTTP_200_OK
             serializer.save()
-
 
         response = {
             'success': True,
@@ -364,6 +383,76 @@ class CommandForBBOView(GenericAPIView):
     def post(self, request):
         data = JSONParser().parse(request)
         serializer = CommandForBBOSerializer(data=data)
+
+        valid = serializer.is_valid(raise_exception=True)
+        if valid:
+            status_code = status.HTTP_200_OK
+            serializer.save()
+
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'message': 'Successfully saved values',
+        }
+        return Response(response, status=status_code)
+
+
+def calculate_avg_oxygen():
+    oxygen = []
+
+    for i in range(4):
+        oxy = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=i + 1).last()
+        iteration = oxy.bbo_rate * (oxy.current_value - oxy.given_value)
+        oxygen.insert(i, iteration)
+        print(iteration)
+
+    avg_oxy_rate = sum(oxygen)
+    print(f'Средний кислород - {avg_oxy_rate}')
+    return avg_oxy_rate
+
+
+class ManagementVolumeFlowForBBOView(GenericAPIView):
+    serializer_class = ManagementVolumeFlowForBBOSerializer
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+
+        avg_oxy = calculate_avg_oxygen()
+        data['avg_oxygen_rate'] = avg_oxy
+
+        serializer = ManagementVolumeFlowForBBOSerializer(data=data)
+
+        valid = serializer.is_valid(raise_exception=True)
+        if valid:
+            status_code = status.HTTP_200_OK
+            serializer.save()
+
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'message': 'Successfully saved values',
+        }
+        return Response(response, status=status_code)
+
+
+class ManagementRecycleForBBOView(GenericAPIView):
+    serializer_class = ManagementRecycleForBBOSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        values1 = ManagementRecycleForBBO.objects.last()
+        serializer1 = self.serializer_class(values1, many=False)
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'data': serializer1.data,
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        serializer = ManagementRecycleForBBOSerializer(data=data)
 
         valid = serializer.is_valid(raise_exception=True)
         if valid:

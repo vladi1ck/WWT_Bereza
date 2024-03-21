@@ -12,35 +12,40 @@ from rest_framework.utils.serializer_helpers import ReturnDict
 
 # from core.logic_for_bbo import AllParameterFromAnalogSensorForBBO1View
 from .models import Parameter, ParameterFromAnalogSensorForBBO, ManagementConcentrationFlowForBBO, CommandForBBO, \
-    Notification
+    Notification, ManagementVolumeFlowForBBO
 from .serializers import ParameterFromAnalogSensorForBBOSerializer, BBOSerializer, \
-    ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer, NotificationSerializer
+    ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer, NotificationSerializer, \
+    ManagementVolumeFlowForBBOSerializer
 
 
 def data_func_for_notification():
-    queryset = Notification.objects.all()
-    data = []
-    message_count = len(queryset)
-    if message_count > 10:
-        count = 10
-    else:
-        count = message_count
-    for item in range(count):
-        data.insert(item, queryset.order_by('-created_date')[item], )
-    return data
+    qs = Notification.objects.all().order_by('-pk')[:10]
+    return NotificationSerializer(qs, many=True).data
+    # queryset = Notification.objects.all()[:10]
+    # data = []
+    # message_count = len(queryset)
+    # if message_count > 10:
+    #     count = 10
+    # else:
+    #     count = message_count
+    # for item in range(count):
+    #     data.insert(item, queryset.order_by('-created_date')[item], )
+    # return data
 
 def data_func_for_parameter():
-    qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:9]
-    qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
-    qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
-    qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:5]
-    qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:5]
+    qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:12]
+    qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:11]
+    qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:11]
+    qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:11]
+    qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:8]
+    qs6 = ManagementVolumeFlowForBBO.objects.filter(bbo_id=5).order_by('-id').last()
     return dict(
         bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
         bbo2=ParameterFromAnalogSensorForBBOSerializer(qs2, many=True).data,
         bbo3=ParameterFromAnalogSensorForBBOSerializer(qs3, many=True).data,
         bbo4=ParameterFromAnalogSensorForBBOSerializer(qs4, many=True).data,
         common=ParameterFromAnalogSensorForBBOSerializer(qs5, many=True).data,
+        air_flow_volume=ManagementVolumeFlowForBBOSerializer(qs6, many=False).data
     )
     # queryset = ParameterFromAnalogSensorForBBO.objects.all()
     # data = []
@@ -74,10 +79,10 @@ class AirFlowConsumer(ListModelMixin, GenericAsyncAPIConsumer):
 
 class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     serializer_class = BBOSerializer
-    queryset = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-pk').all()
-    data = []
-    for item in range(27):
-        data.insert(item, queryset.order_by('-pk')[item], )
+    # queryset = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-pk').all()
+    # data = []
+    # for item in range(27):
+    #     data.insert(item, queryset.order_by('-pk')[item], )
     permissions = (permissions.AllowAny,)
 
 
@@ -101,30 +106,20 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
 
     @model_change.serializer
     def model_serialize(self, instance, action, **kwargs):
-        # if action.value == 'create' and str(instance.bbo_id) == 'BBO1' and instance.name == 'valve_4':
-        #     qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:12]
-        #     return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
-        #     )
-        # if action.value == 'create' and str(instance.bbo_id) == 'BBO2' and instance.name == 'silt_level':
-        #     qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
-        #     return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
-        #     )
-        # if action.value == 'create' and str(instance.bbo_id) == 'BBO3' and instance.name == 'silt_level':
-        #     qs = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
-        #     return dict(bbo=f'{instance.bbo_id}', data=ParameterFromAnalogSensorForBBOSerializer(qs, many=True).data,
-        #     )
-        if action.value == 'create' and str(instance.bbo_id) == 'BBO4' and instance.name == 'silt_level':
-            qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:9]
-            qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:5]
-            qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:5]
-            qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:5]
-            qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:5]
+        if action.value == 'create' and str(instance.bbo_id) == 'Common' and instance.name == 'air_supply':
+            qs1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1).order_by('-id')[:12]
+            qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:11]
+            qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:11]
+            qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:11]
+            qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:8]
+            qs6 = ManagementVolumeFlowForBBO.objects.filter(bbo_id=5).order_by('-id').last()
             return dict(
                 bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
                 bbo2=ParameterFromAnalogSensorForBBOSerializer(qs2, many=True).data,
                 bbo3=ParameterFromAnalogSensorForBBOSerializer(qs3, many=True).data,
                 bbo4=ParameterFromAnalogSensorForBBOSerializer(qs4, many=True).data,
                 common=ParameterFromAnalogSensorForBBOSerializer(qs5, many=True).data,
+                air_flow_volume=ManagementVolumeFlowForBBOSerializer(qs6, many=False).data
                 )
 
 # TODO веб сокет для отправки на клиент - надо написать, ниже тока шаблон как для аналогов
@@ -155,7 +150,7 @@ class CommandForBBOConsumer(ListModelMixin, GenericAsyncAPIConsumer):
 
 class NotificationConsumer(ListModelMixin, GenericAsyncAPIConsumer):
     serializer_class = NotificationSerializer
-    queryset = Notification.objects.all()
+    # queryset = Notification.objects.all()
     permissions = (permissions.AllowAny,)
 
 
@@ -167,7 +162,7 @@ class NotificationConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         ans = loop.create_task(async_function())
         await ans
         answer1 = dict(
-            data=NotificationSerializer(instance=ans.result(), many=True).data,
+            data=ans.result()
         )
 
         await self.send_json(answer1)

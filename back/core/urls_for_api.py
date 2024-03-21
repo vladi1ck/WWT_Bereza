@@ -13,7 +13,7 @@ from .logic_for_bbo import (
     GetAllBBOProjValueView,
     GetAllBBOLabValueView,
     ParameterFromAnalogSensorForBBOView, AllParameterFromAnalogSensorForBBO1View,
-    AirManagerView, CommandForBBOView, stat_detail
+    AirManagerView, CommandForBBOView, stat_detail, ManagementRecycleForBBOView, ManagementVolumeFlowForBBOView
 )
 
 schema_view = get_swagger_view(title='Pastebin API')
@@ -29,6 +29,8 @@ urlpatterns = [
     path('get_manager_air_flow', AirManagerView.as_view()),
     path('post_manager_air_flow', AirManagerView.as_view()),
     path('post_command', CommandForBBOView.as_view()),
+    path('recycle', ManagementRecycleForBBOView.as_view()),
+    path('manager_volume_flow', ManagementVolumeFlowForBBOView.as_view()),
     path('swagger', schema_view),
     re_path(r'stat', logic_for_bbo.stat_detail),
     # re_path(r'stat/(?P<bbo_id>.+)/(?P<name>.+)/(?P<first_date>.+)/(?P<last_date>.+)$', logic_for_bbo.stat_detail),

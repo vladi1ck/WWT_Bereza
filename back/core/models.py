@@ -76,6 +76,7 @@ class WorkMode(models.Model):
     mode = models.PositiveSmallIntegerField(default=0)  # 0 - Локальный, 1 - Автоматический
     time = models.DateTimeField(auto_now_add=True)
 
+
 class LabValue(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='lab_id', on_delete=models.CASCADE, editable=True, default="")
     doseFromWeight = models.FloatField()
@@ -134,6 +135,9 @@ class ParameterFromAnalogSensorForBBO(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     rus_name = models.CharField(max_length=255, null=True)
 
+    class Meta:
+        ordering = ['-id']
+
     def __str__(self) -> str:
         return f'{self.name}'
 
@@ -160,15 +164,30 @@ class ManagementConcentrationFlowForBBO(models.Model):
 class ManagementVolumeFlowForBBO(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='air_volume_management_id', on_delete=models.CASCADE, editable=True,
                                default="")
+    name = models.CharField(max_length=255, null=False, default='avg_oxy_rate')
     avg_oxygen_rate = models.FloatField()  # записывать значения во вьюхе (где его брать???) при получение создавать?
     min_avg_oxygen = models.FloatField()
     max_avg_oxygen = models.FloatField()
-    given_workflow_for_blower = models.FloatField()
-    step_for_setup_blower = models.FloatField()
-    freq_for_setup_blower = models.FloatField()
-    air_consumption = models.FloatField()
-    current_pressure = models.FloatField()
-    timeout = models.FloatField()
+
+    time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.name}'
+
+# Рецикл
+class ManagementRecycleForBBO(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='recycle_management_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    name = models.CharField(max_length=255, null=True)
+    value = models.FloatField(null=True)
+    middle_min_percent = models.IntegerField(null=True)
+    middle_max_percent = models.IntegerField(null=True)
+    max_min_percent = models.IntegerField(null=True)
+    max_max_percent = models.IntegerField(null=True)
+    min_value = 0
+    middle_max_value = models.FloatField(null=True)
+    max_value = models.FloatField(null=True)
+    timeout = models.FloatField(null=True)
     time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:

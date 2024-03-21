@@ -1,6 +1,6 @@
 from django.contrib.auth.admin import UserAdmin
 from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, \
-    ManagementConcentrationFlowForBBO, CommandForBBO, Notification
+    ManagementConcentrationFlowForBBO, CommandForBBO, Notification, ManagementRecycleForBBO, ManagementVolumeFlowForBBO
 from django.contrib import admin
 
 
@@ -23,6 +23,11 @@ class MyBBOAdmin(admin.ModelAdmin):
     list_display = ('name', 'modified_by',)
 
 
+@admin.register(ManagementRecycleForBBO)
+class MyBBOAdmin(admin.ModelAdmin):
+    list_display = ('name', 'time')
+
+
 @admin.register(ProjValue)
 class MyProjAdmin(admin.ModelAdmin):
     list_display = ('bbo_id', 'modified_time', 'modified_by')
@@ -35,19 +40,28 @@ class MyLabAdmin(admin.ModelAdmin):
 
 @admin.register(ParameterFromAnalogSensorForBBO)
 class MyParameterFromAnalogSensorForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'bbo_id', 'time')
+    list_display = ('rus_name', 'bbo_id', 'time')
+
 
 @admin.register(ManagementConcentrationFlowForBBO)
 class MyManagementAirFlowForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'bbo_id','time')
+    list_display = ('name', 'bbo_id', 'time')
+
+
+@admin.register(ManagementVolumeFlowForBBO)
+class ManagementVolumeFlowForBBOAdmin(admin.ModelAdmin):
+    list_display = ('name', 'bbo_id', 'time')
+
 
 @admin.register(CommandForBBO)
 class MyCommandForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'command','time', 'bbo_id',)
+    list_display = ('name', 'command', 'time', 'bbo_id',)
+
 
 @admin.register(Notification)
 class MyNotificationAdmin(admin.ModelAdmin):
     list_display = ('created_date', 'status_code', 'bbo_id', 'message')
+
 
 admin.site.register(User, MyUserAdmin)
 admin.site.register(Parameter)
