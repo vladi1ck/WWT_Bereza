@@ -355,8 +355,8 @@ class AirManagerView(GenericAPIView):
         data = JSONParser().parse(request)
         nam_6 = data['name'][:6]
         data['current_value'] = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'],
-                                                                               name=nam_6).last().value
-        if ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'], name=nam_6).last().is_accident:
+                                                                               name=nam_6).first().value
+        if ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'], name=nam_6).first().is_accident:
             data['is_not_accident'] = False
         else:
             data['is_not_accident'] = True

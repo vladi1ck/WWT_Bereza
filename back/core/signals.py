@@ -17,6 +17,7 @@ from .logic_for_bbo import ParameterFromAnalogSensorForBBOView
 from .models import ManagementConcentrationFlowForBBO, CommandForBBO, BBO, Notification, \
     ParameterFromAnalogSensorForBBO, ManagementRecycleForBBO, ManagementVolumeFlowForBBO
 
+live_1 = True
 live_1_1 = True
 live_1_2 = True
 live_1_3 = True
@@ -109,30 +110,62 @@ live_1_4 = True
 #             return -9999
 
 def calc_recycle():
-    water = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').last().value
+    water = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').first().value
     # water = 720
     recycle = ManagementRecycleForBBO.objects.last()
     percent = 0
-    print(water)
-
+    print(f'water - {water}')
+    print(f'recycle.middle_max_value - {recycle.middle_max_value}')
+    print(f'recycle.middle_max_percent - {recycle.middle_max_percent}')
+    print(f'recycle.middle_min_percent - {recycle.middle_min_percent}')
+    print(f'recycle.max_value - {recycle.max_value}')
+    print(f'recycle.max_max_percent - {recycle.max_max_percent}')
+    status = ''
     if water <= recycle.middle_max_value:
-        print('СРЕДНИЙ')
+        status=('СРЕДНИЙ РЕЦИКЛ')
         percent = (recycle.middle_max_percent * water) / recycle.middle_max_value
         if percent < recycle.middle_min_percent:
             percent = recycle.middle_min_percent
     if water > recycle.middle_max_value:
-        print('МАКСИМУМ')
+        status = ('МАКСИМАЛЬНЫЙ РЕЦИКЛ')
+        if percent >=80:
+            Notification.objects.create(
+                bbo_id=BBO.objects.get(id=5),
+                status_code=1,
+                title=recycle.name,
+                message=f'[{status}] Контролируйте уровень стоков в ББО'
+            )
         percent = (recycle.max_max_percent * water) / recycle.max_value
-    print(percent)
+
+    Notification.objects.create(
+        bbo_id=BBO.objects.get(id=5),
+        status_code=0,
+        title=recycle.name,
+        message=f'[{status}] Установить {percent}% на задвижках'
+    )
     return percent
 
 
 @receiver(signal=post_save, sender=ManagementVolumeFlowForBBO)
 def create_notification_volume(instance, **kwargs):
-    time.sleep(180)
-    calculate_avg_oxygen(instance=instance)
+    global live_1
+
+    th1 = threading.Thread(target=calculate_avg_oxygen, args=(instance,))
+
+    if live_1:
+        live_1 = False
+        th1.start()
+    try:
+        if th1.is_alive():
+            th1.join()
+    except Exception as _ex:
+        print(_ex)
+    finally:
+        live_1 = True
+
 
 def calculate_avg_oxygen(instance, **kwargs):
+    time.sleep(100)
     result = -9999
     print(instance.avg_oxygen_rate)
     print(instance.min_avg_oxygen)
@@ -149,6 +182,7 @@ def calculate_avg_oxygen(instance, **kwargs):
         name=instance.name,
         command=result
     )
+
 
 def analysis_valve(instance):
     print(instance.name)
