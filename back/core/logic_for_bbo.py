@@ -1,4 +1,5 @@
 import datetime
+import pdb
 
 from asgiref.sync import sync_to_async
 from async_signals import Signal
@@ -24,9 +25,79 @@ from rest_framework.response import Response
 from .serializers import (labValueSerializer, projValueSerializer, ParameterFromAnalogSensorForBBOSerializer,
                           BBOSerializer, ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer,
                           NotificationSerializer, ManagementRecycleForBBOSerializer,
-                          ManagementVolumeFlowForBBOSerializer)
+                          ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, NotificationManagerSerializer)
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
-    ManagementConcentrationFlowForBBO, Notification, ManagementRecycleForBBO
+    ManagementConcentrationFlowForBBO, Notification, ManagementRecycleForBBO, WorkMode, NotificationManager
+
+
+class GetDatesForLabValue(GenericAPIView):
+    serializer_class = labValueSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        date = []
+        objs = LabValue.objects.all()
+        i = 0
+        for obj in objs:
+            date.insert(i, obj.datetime.date())
+            i = i + 1
+        # print(date)
+        out = list(dict.fromkeys(date))
+        # print(out)
+        return JsonResponse(out, status=status.HTTP_200_OK, safe=False)
+
+
+class GetLabValueFromDates(GenericAPIView):
+    serializer_class = labValueSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        lab = []
+        labb = {}
+        search_date = request.GET.get('search_date')
+        objs = LabValue.objects.filter(datetime__date=search_date)
+        i = 0
+        for obj in objs:
+            lab.insert(i, obj.id)
+
+            labb[obj.id] = obj.modified_time
+            i = i + 1
+        serializer = self.serializer_class(objs, many=True)
+        # print(labb)
+        return JsonResponse(labb, status=status.HTTP_200_OK, safe=False)
+
+
+class GetLabValueFromID(GenericAPIView):
+    serializer_class = labValueSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request):
+        lab = []
+        lab_id = request.GET.get('id')
+        objs = LabValue.objects.filter(id=lab_id)
+        print(lab)
+        serializer = self.serializer_class(objs, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdateLabValueByID(GenericAPIView):
+    serializer_class = labValueSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request, lab_id):
+        # lab_id = request.PUT.get('id')
+        try:
+            lab_val = LabValue.objects.get(pk=lab_id)
+            print(lab_val)
+        except labValueSerializer.DoesNotExist:
+            return JsonResponse({'message': 'The lab_val does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        new_data = JSONParser().parse(request)
+        print(new_data)
+        tutorial_serializer = labValueSerializer(lab_val, data=new_data)
+        if tutorial_serializer.is_valid():
+            tutorial_serializer.save()
+            return JsonResponse(tutorial_serializer.data)
+        return JsonResponse(tutorial_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class PostLabValueView(GenericAPIView):
@@ -58,43 +129,50 @@ class PostLabValueView(GenericAPIView):
     #     return response
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        valid = serializer.is_valid(raise_exception=True)
+        if request.data['datetime']:
+            datetime_lab = request.data['datetime']
+        else:
+            datetime_lab = datetime.datetime.now()
+        del request.data['datetime']
+        for i in range(len(request.data)):
+            # print(request.data[f'bbo{i+1}'])
+            request.data[f'bbo{i + 1}']['bbo_id'] = i + 1
+            request.data[f'bbo{i + 1}']['datetime'] = datetime_lab
 
-        if valid:
-            status_code = status.HTTP_200_OK
-            serializer.save()
+            serializer = self.serializer_class(data=request.data[f'bbo{i + 1}'])
+            valid = serializer.is_valid(raise_exception=True)
 
-        values1 = LabValue.objects.all().filter(bbo_id=1).last()
-        values2 = LabValue.objects.all().filter(bbo_id=2).last()
-        values3 = LabValue.objects.all().filter(bbo_id=3).last()
-        values4 = LabValue.objects.all().filter(bbo_id=4).last()
-        # if values1 or values2 or values3 or values4 is None:
-        #     response = {
-        #         'success': True,
-        #         'status_code': status.HTTP_200_OK,
-        #         'message': 'Project values is empty',
-        #     }
-        # else:
-        serializer1 = self.serializer_class(values1, many=False)
-        serializer2 = self.serializer_class(values2, many=False)
-        serializer3 = self.serializer_class(values3, many=False)
-        serializer4 = self.serializer_class(values4, many=False)
+            if valid:
+                status_code = status.HTTP_200_OK
+                serializer.save()
+
+        arr = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = LabValue.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                arr.insert(bbo, data)
+        print(arr)
+
         response = {
             'success': True,
-            'status_code': status_code,
-            'message': 'Successfully saved laboratory values',
-            'data_bbo_1': serializer1.data,
-            'data_bbo_2': serializer2.data,
-            'data_bbo_3': serializer3.data,
-            'data_bbo_4': serializer4.data,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully fetched lab values',
         }
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                response[f'data_bbo_{i + 1}'] = arr[i]
+        else:
+            response['message'] = 'No Data'
+        print(response)
+        status_code = status.HTTP_200_OK
         return Response(response, status=status_code)
 
 
 class GetLabValueView(GenericAPIView):
     serializer_class = labValueSerializer
-    permission_classes = (AllowAny,)
+    permission_classes = (IsAuthenticated,)
 
     def get(self, request):
         bbo_id = request.data.get("bbo_id")
@@ -130,31 +208,27 @@ class PostProjValueView(GenericAPIView):
             status_code = status.HTTP_200_OK
             serializer.save()
 
-        values1 = ProjValue.objects.all().filter(bbo_id=1).last()
-        values2 = ProjValue.objects.all().filter(bbo_id=2).last()
-        values3 = ProjValue.objects.all().filter(bbo_id=3).last()
-        values4 = ProjValue.objects.all().filter(bbo_id=4).last()
-        # if values1 or values2 or values3 or values4 is None:
-        #     response = {
-        #         'success': True,
-        #         'status_code': status.HTTP_200_OK,
-        #         'message': 'Project values is empty',
-        #     }
-        # else:
-        serializer1 = self.serializer_class(values1, many=False)
-        serializer2 = self.serializer_class(values2, many=False)
-        serializer3 = self.serializer_class(values3, many=False)
-        serializer4 = self.serializer_class(values4, many=False)
+        arr = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = ProjValue.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                arr.insert(bbo, data)
+        print(arr)
+
         response = {
             'success': True,
-            'status_code': status_code,
+            'status_code': status.HTTP_200_OK,
             'message': 'Successfully fetched project values',
-            'data_bbo_1': serializer1.data,
-            'data_bbo_2': serializer2.data,
-            'data_bbo_3': serializer3.data,
-            'data_bbo_4': serializer4.data,
-
         }
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                response[f'data_bbo_{i + 1}'] = arr[i]
+        else:
+            response['message'] = 'No Data'
+        print(response)
+        status_code = status.HTTP_200_OK
         return Response(response, status=status_code)
 
 
@@ -189,31 +263,29 @@ class GetAllBBOProjValueView(GenericAPIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        values1 = ProjValue.objects.all().filter(bbo_id=1).last()
-        values2 = ProjValue.objects.all().filter(bbo_id=2).last()
-        values3 = ProjValue.objects.all().filter(bbo_id=3).last()
-        values4 = ProjValue.objects.all().filter(bbo_id=4).last()
-        # if values1 or values2 or values3 or values4 is None:
-        #     response = {
-        #         'success': True,
-        #         'status_code': status.HTTP_200_OK,
-        #         'message': 'Project values is empty',
-        #     }
-        # else:
-        serializer1 = self.serializer_class(values1, many=False)
-        serializer2 = self.serializer_class(values2, many=False)
-        serializer3 = self.serializer_class(values3, many=False)
-        serializer4 = self.serializer_class(values4, many=False)
+        arr = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = ProjValue.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                arr.insert(bbo, data)
+        print(arr)
+
         response = {
             'success': True,
             'status_code': status.HTTP_200_OK,
             'message': 'Successfully fetched project values',
-            'data_bbo_1': serializer1.data,
-            'data_bbo_2': serializer2.data,
-            'data_bbo_3': serializer3.data,
-            'data_bbo_4': serializer4.data,
-
         }
+        if len(arr) != 0:
+            serializer1 = self.serializer_class(ProjValue.objects.filter(bbo_id=1).last(), many=False)
+            response['datetime'] = serializer1.data['datetime']
+            for i in range(len(arr)):
+                response[f'data_bbo_{i+1}'] = arr[i]
+        else:
+            response['message'] = 'No Data'
+        print(response)
+
         return Response(response, status=status.HTTP_200_OK)
 
 
@@ -222,31 +294,29 @@ class GetAllBBOLabValueView(GenericAPIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        values1 = LabValue.objects.all().filter(bbo_id=1).last()
-        values2 = LabValue.objects.all().filter(bbo_id=2).last()
-        values3 = LabValue.objects.all().filter(bbo_id=3).last()
-        values4 = LabValue.objects.all().filter(bbo_id=4).last()
-        # if values1 or values2 or values3 or values4 is None:
-        #     response = {
-        #         'success': True,
-        #         'status_code': status.HTTP_200_OK,
-        #         'message': 'Project values is empty',
-        #     }
-        # else:
-        serializer1 = self.serializer_class(values1, many=False)
-        serializer2 = self.serializer_class(values2, many=False)
-        serializer3 = self.serializer_class(values3, many=False)
-        serializer4 = self.serializer_class(values4, many=False)
+        arr = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = LabValue.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                arr.insert(bbo, data)
+
         response = {
             'success': True,
             'status_code': status.HTTP_200_OK,
             'message': 'Successfully fetched laboratory values',
-            'data_bbo_1': serializer1.data,
-            'data_bbo_2': serializer2.data,
-            'data_bbo_3': serializer3.data,
-            'data_bbo_4': serializer4.data,
-
         }
+        temp = {}
+        if len(arr) != 0:
+            serializer1 = self.serializer_class(LabValue.objects.filter(bbo_id=1).last(), many=False)
+            response['datetime'] = serializer1.data['datetime']
+            for i in range(len(arr)):
+                temp[f'bbo_{i+1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
         return Response(response, status=status.HTTP_200_OK)
 
 
@@ -312,6 +382,7 @@ class ParameterFromAnalogSensorForBBOView(GenericAPIView):
             'status_code': status_code,
             'message': 'Successfully saved parameter values',
         }
+
         return Response(response, status=status_code)
 
     def popost(self, request):
@@ -433,6 +504,7 @@ class ManagementVolumeFlowForBBOView(GenericAPIView):
             'status_code': status_code,
             'message': 'Successfully saved values',
         }
+
         return Response(response, status=status_code)
 
 
@@ -465,3 +537,103 @@ class ManagementRecycleForBBOView(GenericAPIView):
             'message': 'Successfully saved values',
         }
         return Response(response, status=status_code)
+
+
+class WorkModeView(GenericAPIView):
+    serializer_class = WorkModeSerializer
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        serializer = WorkModeSerializer(data=data)
+        valid = serializer.is_valid(raise_exception=True)
+        if valid:
+            status_code = status.HTTP_200_OK
+            serializer.save()
+
+        current_mode = WorkMode.objects.last()
+        response = {
+            'success': True,
+            'status_code': status_code,
+            'mode': current_mode.mode,
+            'message': 'Successfully saved values',
+        }
+
+        return Response(response, status=status_code)
+
+
+class NotificationManagerView(GenericAPIView):
+    serializer_class = NotificationManagerSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = NotificationManager.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                new_data = data.copy()
+                for i in new_data:
+                    if new_data[f'{i}'] is None:
+                        del data[i]
+                # print(data)
+                arr.insert(bbo, data)
+
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully fetched notification border values',
+        }
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
+        return Response(response, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        for i in range(len(data)):
+            # print(request.data[f'bbo{i+1}'])
+
+            serializer = self.serializer_class(data=data[f'bbo_{i+1}'])
+            valid = serializer.is_valid(raise_exception=True)
+
+            if valid:
+                status_code = status.HTTP_200_OK
+                serializer.save()
+
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = NotificationManager.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                new_data = data.copy()
+                for i in new_data:
+                    if new_data[f'{i}'] is None:
+                        del data[i]
+                # print(data)
+                arr.insert(bbo, data)
+
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully saved notification border values',
+        }
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
+        return Response(response, status=status.HTTP_200_OK)

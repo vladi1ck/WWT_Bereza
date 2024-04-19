@@ -100,6 +100,7 @@ class LabValue(models.Model):
     organicNitrogenOutputAero = models.FloatField()
     totalPhosphorusOutput = models.FloatField()
     totalPhosphorusOutputBO = models.FloatField()
+    datetime = models.DateTimeField(null=True)
     modified_time = models.DateTimeField(auto_now=True)
     modified_by = models.ForeignKey(to=User, on_delete=models.CASCADE, editable=True)
 
@@ -116,6 +117,7 @@ class ProjValue(models.Model):
     nitrificationVolume = models.FloatField()
     denitrificationVolume = models.FloatField()
     anaerobicsVolume = models.FloatField()
+    datetime = models.DateTimeField(null=True)
     modified_time = models.DateTimeField(auto_now=True)
     modified_by = models.ForeignKey(to=User, on_delete=models.CASCADE, editable=True)
 
@@ -174,19 +176,32 @@ class ManagementVolumeFlowForBBO(models.Model):
     def __str__(self) -> str:
         return f'{self.name}'
 
+
 # Рецикл
 class ManagementRecycleForBBO(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='recycle_management_id', on_delete=models.CASCADE, editable=True,
                                default="")
     name = models.CharField(max_length=255, null=True)
     value = models.FloatField(null=True)
+
+    # Задвижки
     middle_min_percent = models.IntegerField(null=True)
     middle_max_percent = models.IntegerField(null=True)
     max_min_percent = models.IntegerField(null=True)
     max_max_percent = models.IntegerField(null=True)
+
+    # Насосы
+    middle_min_value_pump = models.FloatField(null=True)
+    middle_max_value_pump = models.FloatField(default=0, null=True)
+    max_min_value_pump = models.FloatField(null=True)
+    max_max_value_pump = models.FloatField(default=0, null=True)
+
+    # Общие
     min_value = 0
     middle_max_value = models.FloatField(null=True)
     max_value = models.FloatField(null=True)
+
+    # Разное
     timeout = models.FloatField(null=True)
     time = models.DateTimeField(auto_now_add=True)
 
@@ -201,6 +216,7 @@ class CommandForBBO(models.Model):
     command = models.IntegerField(
         validators=[MinValueValidator(-1), MaxValueValidator(1)]
     )  # -1 - понижать, 0 - ничего, 1 - повышать.
+    value = models.FloatField(null=True)
     time = models.DateTimeField(auto_now_add=True)
 
 
@@ -212,3 +228,24 @@ class Notification(models.Model):
     title = models.CharField(max_length=255, blank=True)
     message = models.CharField(max_length=255, blank=True)
     created_date = models.DateTimeField(auto_now_add=True)
+
+
+class NotificationManager(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='notification_manager_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    ph_min = models.IntegerField(null=True)
+    ph_max = models.IntegerField(null=True)
+    OVP_max = models.IntegerField(null=True)
+    temp_min = models.IntegerField(null=True)
+    avg_sludge_min = models.IntegerField(null=True)
+    avg_sludge_max = models.IntegerField(null=True)
+    water = models.IntegerField(null=True)
+    level_sludge = models.IntegerField(null=True)
+    recycle_valve = models.IntegerField(null=True)
+    recycle_pump = models.IntegerField(null=True)
+    hpk = models.IntegerField(null=True)
+    hpk_7hours = models.IntegerField(null=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.bbo_id}'

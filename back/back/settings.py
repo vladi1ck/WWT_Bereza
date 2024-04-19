@@ -27,6 +27,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+INTERNAL_IPS = [
+    # ...
+    "127.0.0.1",
+    # ...
+]
 
 # Application definition
 
@@ -43,7 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
 
     'django.contrib.staticfiles',  # required for serving swagger ui's css/js files
-
+    "debug_toolbar",
 
     'rest_framework',
     'corsheaders',
@@ -64,6 +69,8 @@ CHANNEL_LAYERS = {
 }
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
+
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -72,6 +79,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.RequestTimeMiddleware',
 ]
 
 ROOT_URLCONF = 'back.urls'
@@ -139,6 +147,8 @@ LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
+
+USE_L10N = True
 
 USE_TZ = True
 

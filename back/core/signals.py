@@ -1,21 +1,25 @@
 import asyncio
+import datetime
 import itertools
 import multiprocessing
 import threading
 import time
 
+import snap7.client
 from asgiref.sync import sync_to_async, async_to_sync
 from async_signals import Signal, receiver
+from django.db.models import Max
 
 from django.db.models.signals import post_save, pre_delete, pre_save
 from django.contrib.auth.models import User
+from snap7.util import get_real, get_int, set_int
 
 from . import logic_for_bbo
 # from django.dispatch import receiver
 
 from .logic_for_bbo import ParameterFromAnalogSensorForBBOView
 from .models import ManagementConcentrationFlowForBBO, CommandForBBO, BBO, Notification, \
-    ParameterFromAnalogSensorForBBO, ManagementRecycleForBBO, ManagementVolumeFlowForBBO
+    ParameterFromAnalogSensorForBBO, ManagementRecycleForBBO, ManagementVolumeFlowForBBO, WorkMode, NotificationManager
 
 live_1 = True
 live_1_1 = True
@@ -111,39 +115,61 @@ live_1_4 = True
 
 def calc_recycle():
     water = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').first().value
+    manager = NotificationManager.objects.filter(bbo_id=5).last()
     # water = 720
     recycle = ManagementRecycleForBBO.objects.last()
-    percent = 0
-    print(f'water - {water}')
-    print(f'recycle.middle_max_value - {recycle.middle_max_value}')
-    print(f'recycle.middle_max_percent - {recycle.middle_max_percent}')
-    print(f'recycle.middle_min_percent - {recycle.middle_min_percent}')
-    print(f'recycle.max_value - {recycle.max_value}')
-    print(f'recycle.max_max_percent - {recycle.max_max_percent}')
+    percent = 0.0
+    freq_pump = 0.0
+    # print(f'water - {water}')
+    # print(f'recycle.middle_max_value - {recycle.middle_max_value}')
+    # print(f'recycle.middle_max_percent - {recycle.middle_max_percent}')
+    # print(f'recycle.middle_min_percent - {recycle.middle_min_percent}')
+    # print(f'recycle.max_value - {recycle.max_value}')
+    # print(f'recycle.max_max_percent - {recycle.max_max_percent}')
+    # print(f'recycle.middle_max_value_pump - {recycle.middle_max_value_pump}')
+    # print(f'recycle.max_value_pump - {recycle.max_max_value_pump}')
     status = ''
     if water <= recycle.middle_max_value:
-        status=('СРЕДНИЙ РЕЦИКЛ')
+        status = ('СРЕДНИЙ РЕЦИКЛ')
         percent = (recycle.middle_max_percent * water) / recycle.middle_max_value
+        freq_pump = (recycle.middle_max_value_pump * water) / recycle.middle_max_value
+
         if percent < recycle.middle_min_percent:
             percent = recycle.middle_min_percent
+        if freq_pump < recycle.middle_min_value_pump:
+            freq_pump = recycle.middle_min_value_pump
+
     if water > recycle.middle_max_value:
         status = ('МАКСИМАЛЬНЫЙ РЕЦИКЛ')
-        if percent >=80:
+
+        percent = (recycle.max_max_percent * water) / recycle.max_value
+        freq_pump = (recycle.max_max_value_pump * water) / recycle.max_value
+
+        if percent >= manager.recycle_valve or freq_pump >= manager.recycle_pump:
             Notification.objects.create(
                 bbo_id=BBO.objects.get(id=5),
                 status_code=1,
                 title=recycle.name,
                 message=f'[{status}] Контролируйте уровень стоков в ББО'
             )
-        percent = (recycle.max_max_percent * water) / recycle.max_value
-
-    Notification.objects.create(
-        bbo_id=BBO.objects.get(id=5),
-        status_code=0,
-        title=recycle.name,
-        message=f'[{status}] Установить {percent}% на задвижках'
-    )
-    return percent
+    percent = round(percent)
+    freq_pump = round(freq_pump)
+    print(freq_pump)
+    print(percent)
+    if WorkMode.objects.last().mode == 0:
+        Notification.objects.create(
+            bbo_id=BBO.objects.get(id=5),
+            status_code=0,
+            title=recycle.name,
+            message=f'[{status}] Установить {percent}% на задвижках'
+        )
+        Notification.objects.create(
+            bbo_id=BBO.objects.get(id=5),
+            status_code=0,
+            title=recycle.name,
+            message=f'[{status}] Установить {freq_pump}Гц на насосах'
+        )
+    return
 
 
 @receiver(signal=post_save, sender=ManagementVolumeFlowForBBO)
@@ -165,7 +191,7 @@ def create_notification_volume(instance, **kwargs):
 
 
 def calculate_avg_oxygen(instance, **kwargs):
-    time.sleep(100)
+    time.sleep(180)
     result = -9999
     print(instance.avg_oxygen_rate)
     print(instance.min_avg_oxygen)
@@ -176,12 +202,12 @@ def calculate_avg_oxygen(instance, **kwargs):
         result = 1
     elif instance.min_avg_oxygen <= instance.avg_oxygen_rate <= instance.max_avg_oxygen:
         result = 0
-
-    CommandForBBO.objects.create(
-        bbo_id=instance.bbo_id,
-        name=instance.name,
-        command=result
-    )
+    if WorkMode.objects.last().mode == 0:
+        CommandForBBO.objects.create(
+            bbo_id=instance.bbo_id,
+            name=instance.name,
+            command=result
+        )
 
 
 def analysis_valve(instance):
@@ -207,12 +233,12 @@ def analysis_valve(instance):
         else:
             print(f'{instance.name} - COMMAND: Error')
             result = -9999
-
-        CommandForBBO.objects.create(
-            bbo_id=instance.bbo_id,
-            name=instance.name,
-            command=result
-        )
+        if WorkMode.objects.last().mode == 0:
+            CommandForBBO.objects.create(
+                bbo_id=instance.bbo_id,
+                name=instance.name,
+                command=result
+            )
 
 
 @receiver(signal=post_save, sender=ManagementConcentrationFlowForBBO)
@@ -261,10 +287,49 @@ def handler(sender, instance, **kwargs):
         live_1_3 = True
         live_1_4 = True
 
+@receiver(signal=pre_save, sender=ParameterFromAnalogSensorForBBO)
+def for_HPK(sender, instance, **kwargs):
+    if instance.name == 'HPK':
+        today = datetime.datetime.today()
+        yesterday = today - datetime.timedelta(days=1)
+        y_time_start = f'{yesterday.date()} 00:00:00'
+        y_time_end = f'{yesterday.date()} 23:59:59'
+
+        yesterday = yesterday.date()
+        last_value = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK').first()
+        date = last_value.time.date()
+
+        if date == yesterday:
+            all_values = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK', time__range=[y_time_start, y_time_end]).all()
+            max_value = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK', time__range=[y_time_start, y_time_end]).aggregate(Max('value'))
+
+            length = len(all_values)
+            sum = 0
+            for val in all_values:
+                sum = sum + val.value
+            res = round(sum / length, 2)
+            print(res)
+            ParameterFromAnalogSensorForBBO.objects.create(
+                bbo_id=instance.bbo_id,
+                name='avg_HPK_yesterday',
+                value=res,
+                rus_name='Средний ХПК за вчера',
+            )
+            ParameterFromAnalogSensorForBBO.objects.create(
+                bbo_id=instance.bbo_id,
+                name='max_HPK_yesterday',
+                value=round(max_value['value__max'], 2),
+                rus_name='Максимальный ХПК за вчера',
+            )
+
+
 
 @receiver(signal=post_save, sender=ParameterFromAnalogSensorForBBO)
 def create_notification(sender, instance, **kwargs):
-    if instance.name == 'OVP' and instance.value <= -200.0:
+    # if WorkMode.objects.last().mode == 0:
+    manager = NotificationManager.objects.filter(bbo_id=instance.bbo_id).last()
+
+    if instance.name == 'OVP' and instance.value <= manager.OVP_max:
         Notification.objects.create(
             bbo_id=instance.bbo_id,
             status_code=0,
@@ -273,16 +338,16 @@ def create_notification(sender, instance, **kwargs):
                     'на входе'
         )
 
-    if instance.name == 'acidity' and (instance.value <= 6.5 or instance.value >= 8.5):
+    if instance.name == 'acidity' and (instance.value <= manager.ph_min or instance.value >= manager.ph_max):
         Notification.objects.create(
             bbo_id=instance.bbo_id,
             status_code=0,
             title=instance.name,
-            message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Необходимо провести обследование на наличие сброса промышленных сточных вод, '
+            message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Необходимо провести обследование на наличие сброса промышленных сточных вод '
                     'при возможности запустить резервный осветлитель-перегниватель'
         )
 
-    if instance.name == 'temperature' and instance.value <= 15.0:
+    if instance.name == 'temperature' and instance.value <= manager.temp_min:
         Notification.objects.create(
             bbo_id=instance.bbo_id,
             status_code=0,
@@ -290,77 +355,189 @@ def create_notification(sender, instance, **kwargs):
             message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Необходимо обратить внимание на интенсивность процесса денитрификации'
         )
 
-    if instance.name == 'turbidity' and instance.value <= 2.0:
+    if instance.name == 'silt_level':
+        if instance.value > manager.level_sludge:
+            Notification.objects.create(
+                bbo_id=instance.bbo_id,
+                status_code=0,
+                title=instance.name,
+                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Обеспечьте удаление избыточного ила'
+            )
+
+    if instance.name == 'turbidity':
+        if instance.value < manager.avg_sludge_min:
+            Notification.objects.create(
+                bbo_id=instance.bbo_id,
+                status_code=0,
+                title=instance.name,
+                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Необходиомо перераспределить потоки активного ила по биоблокам'
+            )
+        elif instance.value > manager.avg_sludge_max:
+            Notification.objects.create(
+                bbo_id=instance.bbo_id,
+                status_code=0,
+                title=instance.name,
+                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Необходиомо перераспределить потоки активного ила по биоблокам'
+            )
+    if instance.name == 'water_consumption_in' and instance.value > manager.water:
         Notification.objects.create(
-            bbo_id=instance.bbo_id,
+            bbo_id=BBO.objects.get(id=5),
             status_code=0,
-            title=instance.name,
-            message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Необходиомо перераспределить потоки активного ила по биоблокам'
+            title='common_notice',
+            message=f'[{BBO.objects.get(id=5).rus_name}] Есть возможность гидравлической перегрузки сооружений, при возможности сбросить сточные воды в резервные сооружения'
         )
+
+    if instance.name == 'HPK':
+
+        if instance.value > manager.hpk:
+            Notification.objects.create(
+                bbo_id=BBO.objects.get(id=5),
+                status_code=0,
+                title='common_notice',
+                message=f'[{BBO.objects.get(id=5).rus_name}]  Необходимо провести обследование на наличие сброса промышленных сточных вод, '
+                        f'при возможности запустить резервный осветлитель-перегниватель и/либо увеличить откачку сброженного осадка.'
+            )
+
     if instance.name == 'turbidity' and str(instance.bbo_id) == 'BBO4':
         calc_recycle()
-        turb1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1, name='turbidity').last()
-        turb2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2, name='turbidity').last()
-        turb3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3, name='turbidity').last()
-        turb4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4, name='turbidity').last()
+        turb1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1, name='turbidity').first()
+        turb2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2, name='turbidity').first()
+        turb3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3, name='turbidity').first()
+        turb4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4, name='turbidity').first()
         val1 = turb1.value
         val2 = turb2.value
         val3 = turb3.value
         val4 = turb4.value
         sum = (val1 + val2 + val3 + val4) / 4
-        if sum < 2:
+        if sum < manager.avg_sludge_min:
             Notification.objects.create(
                 bbo_id=BBO.objects.get(id=5),
                 status_code=0,
                 title='common_notice',
                 message=f'[{BBO.objects.get(id=5).rus_name}] На данный момент отсутствует необходимость в откачке избыточного аткивного ила'
             )
+        elif sum > manager.avg_sludge_max:
+            Notification.objects.create(
+                bbo_id=BBO.objects.get(id=5),
+                status_code=0,
+                title='common_notice',
+                message=f'[{BBO.objects.get(id=5).rus_name}] Необходима откачка избыточного активного ила'
+            )
+    # if instance.name == 'water_consumption_in':
+    #     calc_recycle()
 
 
 @receiver(signal=post_save, sender=CommandForBBO)
 def create_notification(sender, instance, **kwargs):
-    if instance.name == 'oxygen_1_1' or instance.name == 'oxygen_1_2' or instance.name == 'oxygen_1_3' or instance.name == 'oxygen_1_4':
-        if instance.command == 1:
-            Notification.objects.create(
-                bbo_id=instance.bbo_id,
-                status_code=0,
-                title=instance.name,
-                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Увеличьте процент открытия затвора подачи воздуха'
-            )
-        elif instance.command == -1:
-            Notification.objects.create(
-                bbo_id=instance.bbo_id,
-                status_code=0,
-                title=instance.name,
-                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Уменьшите процент открытия затвора подачи воздуха'
-            )
-        elif instance.command == 0:
-            Notification.objects.create(
-                bbo_id=instance.bbo_id,
-                status_code=0,
-                title=instance.name,
-                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Не требуется регулировка затвора подачи воздуха'
-            )
+    if WorkMode.objects.last().mode == 0:
+        if instance.name == 'oxygen_1_1' or instance.name == 'oxygen_1_2' or instance.name == 'oxygen_1_3' or instance.name == 'oxygen_1_4':
+            if instance.command == 1:
+                Notification.objects.create(
+                    bbo_id=instance.bbo_id,
+                    status_code=0,
+                    title=instance.name,
+                    message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Увеличьте процент открытия затвора подачи воздуха'
+                )
+            elif instance.command == -1:
+                Notification.objects.create(
+                    bbo_id=instance.bbo_id,
+                    status_code=0,
+                    title=instance.name,
+                    message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Уменьшите процент открытия затвора подачи воздуха'
+                )
+            elif instance.command == 0:
+                Notification.objects.create(
+                    bbo_id=instance.bbo_id,
+                    status_code=0,
+                    title=instance.name,
+                    message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Не требуется регулировка затвора подачи воздуха'
+                )
 
-    elif instance.name == 'avg_oxy_rate':
-        if instance.command == 1:
-            Notification.objects.create(
-                bbo_id=instance.bbo_id,
-                status_code=0,
-                title=instance.name,
-                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Увеличьте производительность воздуходувки'
-            )
-        elif instance.command == -1:
-            Notification.objects.create(
-                bbo_id=instance.bbo_id,
-                status_code=0,
-                title=instance.name,
-                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Уменьшите производительность воздуходувки'
-            )
-        elif instance.command == 0:
-            Notification.objects.create(
-                bbo_id=instance.bbo_id,
-                status_code=0,
-                title=instance.name,
-                message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Не требуется регулировка производительности воздуходувки'
-            )
+        elif instance.name == 'avg_oxy_rate':
+            if instance.command == 1:
+                Notification.objects.create(
+                    bbo_id=instance.bbo_id,
+                    status_code=0,
+                    title=instance.name,
+                    message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Увеличьте производительность воздуходувки'
+                )
+            elif instance.command == -1:
+                Notification.objects.create(
+                    bbo_id=instance.bbo_id,
+                    status_code=0,
+                    title=instance.name,
+                    message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Уменьшите производительность воздуходувки'
+                )
+            elif instance.command == 0:
+                Notification.objects.create(
+                    bbo_id=instance.bbo_id,
+                    status_code=0,
+                    title=instance.name,
+                    message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Не требуется регулировка производительности воздуходувки'
+                )
+
+
+@receiver(signal=post_save, sender=WorkMode)
+def create_notification_work(sender, instance, **kwargs):
+    mode = {
+        0: 'Локальный',
+        1: 'Автоматический',
+    }
+    Notification.objects.create(
+        bbo_id=BBO.objects.get(id=5),
+        status_code=0,
+        title='Режим работы',
+        message=f'[{BBO.objects.get(id=5).rus_name}] Изменен режим работы на {mode[instance.mode]}'
+    )
+
+
+plc = snap7.client.Client()
+
+
+def connect_to_plc(_plc):
+    try:
+        url = "46.216.167.211"
+
+        _plc.connect(url, 0, 0)
+        print(_plc.get_cpu_state())
+    except Exception as _ex:
+        print(_ex)
+        connect_to_plc(_plc)
+
+
+@receiver(signal=post_save, sender=CommandForBBO)
+def post_command(sender, instance, **kwargs):
+    url = "46.216.167.211"
+    connect = False
+    attempt = 2
+    try:
+        while True:
+            if not connect:
+                try:
+                    plc1 = snap7.client.Client()
+                    plc1.connect(url, 0, 0, 102)
+                    print(plc1.get_cpu_state())
+                    time.sleep(1)
+                    connect = plc1.get_connected()
+
+                    print('plc1 connect ', connect)
+                except Exception as e:
+                    connect = False
+                    attempt = attempt - 1
+                    if attempt == 0:
+                        connect = True
+                    time.sleep(5)
+                    continue
+            # connect_to_plc(_plc=plc)
+            if connect:
+                byte_area = plc1.read_area(snap7.types.Areas.DB, dbnumber=32, start=0, size=134)
+                print(f'ДО - {get_int(byte_area, 32)}')
+                print(instance.command)
+                data = bytearray(2)
+                snap7.util.set_int(data, 0, instance.command)
+                plc1.db_write(32, 32, data)
+                byte_area = plc1.read_area(snap7.types.Areas.DB, dbnumber=32, start=0, size=134)
+                print(f'После - {get_int(byte_area, 32)}')
+                break
+    except Exception as _ex:
+        print(_ex)

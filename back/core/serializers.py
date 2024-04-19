@@ -6,7 +6,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
-    ManagementConcentrationFlowForBBO, CommandForBBO, Notification, ManagementRecycleForBBO, ManagementVolumeFlowForBBO
+    ManagementConcentrationFlowForBBO, CommandForBBO, Notification, ManagementRecycleForBBO, ManagementVolumeFlowForBBO, \
+    WorkMode, NotificationManager
 from rest_framework.validators import UniqueTogetherValidator
 from django.utils import dateformat
 from django.conf import settings
@@ -114,9 +115,23 @@ class UserListSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             'username',
+            'first_name',
+            'last_name',
             'role',
             'id',
         )
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'role',)
+
+
+class UserPassSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('password',)
 
 
 class labValueSerializer(serializers.ModelSerializer):
@@ -135,6 +150,12 @@ class ParameterFromAnalogSensorForBBOSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParameterFromAnalogSensorForBBO
         exclude = ('id',)
+
+
+class HPKSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ParameterFromAnalogSensorForBBO
+        fields = ('name', 'value', 'time')
 
 
 class BBOSerializer(serializers.ModelSerializer):
@@ -172,4 +193,16 @@ class ManagementRecycleForBBOSerializer(serializers.ModelSerializer):
 class ManagementVolumeFlowForBBOSerializer(serializers.ModelSerializer):
     class Meta:
         model = ManagementVolumeFlowForBBO
+        fields = '__all__'
+
+
+class WorkModeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkMode
+        fields = '__all__'
+
+
+class NotificationManagerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NotificationManager
         fields = '__all__'
