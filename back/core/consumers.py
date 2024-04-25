@@ -14,10 +14,10 @@ from rest_framework.utils.serializer_helpers import ReturnDict
 
 # from core.logic_for_bbo import AllParameterFromAnalogSensorForBBO1View
 from .models import Parameter, ParameterFromAnalogSensorForBBO, ManagementConcentrationFlowForBBO, CommandForBBO, \
-    Notification, ManagementVolumeFlowForBBO, WorkMode
+    Notification, ManagementVolumeFlowForBBO, WorkMode, DistributionBowl
 from .serializers import ParameterFromAnalogSensorForBBOSerializer, BBOSerializer, \
     ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer, NotificationSerializer, \
-    ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, HPKSerializer
+    ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, HPKSerializer, DistributionBowlSerializer
 
 
 def data_func_for_notification():
@@ -48,6 +48,10 @@ def data_func_for_parameter():
     qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:8]
     qs6 = ManagementVolumeFlowForBBO.objects.last()
     mode = WorkMode.objects.last()
+    bowl1 = DistributionBowl.objects.filter(bbo_id=1).last()
+    bowl2 = DistributionBowl.objects.filter(bbo_id=2).last()
+    bowl3 = DistributionBowl.objects.filter(bbo_id=3).last()
+    bowl4 = DistributionBowl.objects.filter(bbo_id=4).last()
     sum = 0
     res = 0
     hpk_today = (ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
@@ -86,6 +90,10 @@ def data_func_for_parameter():
         max_hpk_today=round(max_value['value__max'], 2),
         avg_hpk_yesterday=HPKSerializer(avg_HPK_yesterday, many=False).data,
         max_hpk_yesterday=HPKSerializer(max_HPK_yesterday, many=False).data,
+        bowl1=DistributionBowlSerializer(bowl1, many=False).data,
+        bowl2=DistributionBowlSerializer(bowl2, many=False).data,
+        bowl3=DistributionBowlSerializer(bowl3, many=False).data,
+        bowl4=DistributionBowlSerializer(bowl4, many=False).data
     )
     # queryset = ParameterFromAnalogSensorForBBO.objects.all()
     # data = []
@@ -154,6 +162,10 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:8]
             qs6 = ManagementVolumeFlowForBBO.objects.last()
             mode = WorkMode.objects.last()
+            bowl1 = DistributionBowl.objects.filter(bbo_id=1).last()
+            bowl2 = DistributionBowl.objects.filter(bbo_id=2).last()
+            bowl3 = DistributionBowl.objects.filter(bbo_id=3).last()
+            bowl4 = DistributionBowl.objects.filter(bbo_id=4).last()
             sum = 0
             res = 0
             hpk_today = (ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
@@ -196,6 +208,10 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
                 max_hpk_today=round(max_value['value__max'], 2),
                 avg_hpk_yesterday=HPKSerializer(avg_HPK_yesterday, many=False).data,
                 max_hpk_yesterday = HPKSerializer(max_HPK_yesterday, many=False).data,
+                bowl1=DistributionBowlSerializer(bowl1, many=False).data,
+                bowl2=DistributionBowlSerializer(bowl2, many=False).data,
+                bowl3=DistributionBowlSerializer(bowl3, many=False).data,
+                bowl4=DistributionBowlSerializer(bowl4, many=False).data
             )
 
 

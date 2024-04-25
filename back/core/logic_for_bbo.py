@@ -25,9 +25,11 @@ from rest_framework.response import Response
 from .serializers import (labValueSerializer, projValueSerializer, ParameterFromAnalogSensorForBBOSerializer,
                           BBOSerializer, ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer,
                           NotificationSerializer, ManagementRecycleForBBOSerializer,
-                          ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, NotificationManagerSerializer)
+                          ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, NotificationManagerSerializer,
+                          DistributionBowlSerializer)
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
-    ManagementConcentrationFlowForBBO, Notification, ManagementRecycleForBBO, WorkMode, NotificationManager
+    ManagementConcentrationFlowForBBO, Notification, ManagementRecycleForBBO, WorkMode, NotificationManager, \
+    DistributionBowl
 
 
 class GetDatesForLabValue(GenericAPIView):
@@ -129,6 +131,7 @@ class PostLabValueView(GenericAPIView):
     #     return response
 
     def post(self, request):
+        print(request.data)
         if request.data['datetime']:
             datetime_lab = request.data['datetime']
         else:
@@ -281,7 +284,7 @@ class GetAllBBOProjValueView(GenericAPIView):
             serializer1 = self.serializer_class(ProjValue.objects.filter(bbo_id=1).last(), many=False)
             response['datetime'] = serializer1.data['datetime']
             for i in range(len(arr)):
-                response[f'data_bbo_{i+1}'] = arr[i]
+                response[f'data_bbo_{i + 1}'] = arr[i]
         else:
             response['message'] = 'No Data'
         print(response)
@@ -312,7 +315,7 @@ class GetAllBBOLabValueView(GenericAPIView):
             serializer1 = self.serializer_class(LabValue.objects.filter(bbo_id=1).last(), many=False)
             response['datetime'] = serializer1.data['datetime']
             for i in range(len(arr)):
-                temp[f'bbo_{i+1}'] = arr[i]
+                temp[f'bbo_{i + 1}'] = arr[i]
             response['data'] = temp
         else:
             response['message'] = 'No Data'
@@ -598,11 +601,13 @@ class NotificationManagerView(GenericAPIView):
         return Response(response, status=status.HTTP_200_OK)
 
     def post(self, request):
+        print(request)
         data = JSONParser().parse(request)
-        for i in range(len(data)):
-            # print(request.data[f'bbo{i+1}'])
 
-            serializer = self.serializer_class(data=data[f'bbo_{i+1}'])
+        for i in range(len(data)):
+            print(request.data[f'bbo{i + 1}'])
+
+            serializer = self.serializer_class(data=data[f'bbo_{i + 1}'])
             valid = serializer.is_valid(raise_exception=True)
 
             if valid:
@@ -627,6 +632,76 @@ class NotificationManagerView(GenericAPIView):
             'success': True,
             'status_code': status.HTTP_200_OK,
             'message': 'Successfully saved notification border values',
+        }
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class DistributionBowlView(GenericAPIView):
+    serializer_class = DistributionBowlSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = DistributionBowl.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+
+                arr.insert(bbo, data)
+
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully saved distribution bowl values',
+        }
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
+        return Response(response, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        # print(data)
+
+        for i in range(len(data)):
+            # print(data[f'bbo{i + 1}'])
+
+            serializer = self.serializer_class(data=data[f'bbo{i + 1}'])
+            valid = serializer.is_valid(raise_exception=True)
+
+            if valid:
+                status_code = status.HTTP_200_OK
+                serializer.save()
+
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = DistributionBowl.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+
+                arr.insert(bbo, data)
+
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully saved distribution bowl values',
         }
         temp = {}
         if len(arr) != 0:

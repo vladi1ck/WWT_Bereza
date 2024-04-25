@@ -15,7 +15,7 @@ from .logic_for_bbo import (
     ParameterFromAnalogSensorForBBOView, AllParameterFromAnalogSensorForBBO1View,
     AirManagerView, CommandForBBOView, stat_detail, ManagementRecycleForBBOView, ManagementVolumeFlowForBBOView,
     WorkModeView, GetDatesForLabValue, GetLabValueFromDates, GetLabValueFromID, UpdateLabValueByID,
-    NotificationManagerView
+    NotificationManagerView, DistributionBowlView
 )
 
 
@@ -40,6 +40,7 @@ urlpatterns = [
     path('manager_volume_flow', ManagementVolumeFlowForBBOView.as_view()),
     path('change_mode', WorkModeView.as_view()),
     path('sensor_borders', NotificationManagerView.as_view()),
+    path('bowl', DistributionBowlView.as_view()),
     path('swagger', schema_view),
     re_path(r'stat', logic_for_bbo.stat_detail),
     # re_path(r'stat/(?P<bbo_id>.+)/(?P<name>.+)/(?P<first_date>.+)/(?P<last_date>.+)$', logic_for_bbo.stat_detail),

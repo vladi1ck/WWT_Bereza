@@ -299,7 +299,7 @@ def for_HPK(sender, instance, **kwargs):
         last_value = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK').first()
         date = last_value.time.date()
 
-        if date == yesterday:
+        if date != today.date():
             all_values = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK', time__range=[y_time_start, y_time_end]).all()
             max_value = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK', time__range=[y_time_start, y_time_end]).aggregate(Max('value'))
 

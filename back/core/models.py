@@ -249,3 +249,11 @@ class NotificationManager(models.Model):
 
     def __str__(self) -> str:
         return f'{self.bbo_id}'
+
+
+class DistributionBowl(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='distribution_bowl_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    name = models.CharField(max_length=255, null=False)
+    value = models.FloatField(null=True)
+    time = models.DateTimeField(auto_now_add=True)

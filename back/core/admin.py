@@ -1,7 +1,7 @@
 from django.contrib.auth.admin import UserAdmin
 from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, \
     ManagementConcentrationFlowForBBO, CommandForBBO, Notification, ManagementRecycleForBBO, ManagementVolumeFlowForBBO, \
-    WorkMode, NotificationManager
+    WorkMode, NotificationManager, DistributionBowl
 from django.contrib import admin
 
 
@@ -72,6 +72,11 @@ class MyNotificationAdmin(admin.ModelAdmin):
 @admin.register(NotificationManager)
 class MyNotificationManagerAdmin(admin.ModelAdmin):
     list_display = ('bbo_id', 'created_date')
+
+
+@admin.register(DistributionBowl)
+class MyDistributionBowlAdmin(admin.ModelAdmin):
+    list_display = ('name', 'time')
 
 
 admin.site.register(User, MyUserAdmin)

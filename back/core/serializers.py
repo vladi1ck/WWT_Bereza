@@ -7,7 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
     ManagementConcentrationFlowForBBO, CommandForBBO, Notification, ManagementRecycleForBBO, ManagementVolumeFlowForBBO, \
-    WorkMode, NotificationManager
+    WorkMode, NotificationManager, DistributionBowl
 from rest_framework.validators import UniqueTogetherValidator
 from django.utils import dateformat
 from django.conf import settings
@@ -205,4 +205,10 @@ class WorkModeSerializer(serializers.ModelSerializer):
 class NotificationManagerSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationManager
+        fields = '__all__'
+
+
+class DistributionBowlSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DistributionBowl
         fields = '__all__'
