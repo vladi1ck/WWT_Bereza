@@ -156,6 +156,9 @@ class ManagementConcentrationFlowForBBO(models.Model):
     bbo_rate = models.FloatField()
     is_not_accident = models.BooleanField(default=True)
     timeout = models.FloatField()
+    air_min_percent = models.IntegerField(default=0)
+    air_max_percent = models.IntegerField(default=0)
+    air_step = models.IntegerField(default=0)
     time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -183,6 +186,18 @@ class ManagementRecycleForBBO(models.Model):
                                default="")
     name = models.CharField(max_length=255, null=True)
     value = models.FloatField(null=True)
+
+    # Задвижки анаэробная зона
+    anaerobic_middle_min_percent = models.IntegerField(null=True)
+    anaerobic_middle_max_percent = models.IntegerField(null=True)
+    anaerobic_max_min_percent = models.IntegerField(null=True)
+    anaerobic_max_max_percent = models.IntegerField(null=True)
+
+    # Задвижки нитратная зона
+    nitrate_middle_min_percent = models.IntegerField(null=True)
+    nitrate_middle_max_percent = models.IntegerField(null=True)
+    nitrate_max_min_percent = models.IntegerField(null=True)
+    nitrate_max_max_percent = models.IntegerField(null=True)
 
     # Задвижки
     middle_min_percent = models.IntegerField(null=True)
@@ -213,7 +228,7 @@ class CommandForBBO(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='air_command_id', on_delete=models.CASCADE, editable=True,
                                default="")
     name = models.CharField(max_length=255, null=False)  # Название нужной комманды
-    command = models.IntegerField(
+    command = models.IntegerField(null=True,
         validators=[MinValueValidator(-1), MaxValueValidator(1)]
     )  # -1 - понижать, 0 - ничего, 1 - повышать.
     value = models.FloatField(null=True)

@@ -45,13 +45,22 @@ def data_func_for_parameter():
     qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:11]
     qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:11]
     qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:11]
-    qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:8]
+    qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:7]
+    conc1 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=1).last()
+    conc2 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=2).last()
+    conc3 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=3).last()
+    conc4 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=4).last()
     qs6 = ManagementVolumeFlowForBBO.objects.last()
     mode = WorkMode.objects.last()
     bowl1 = DistributionBowl.objects.filter(bbo_id=1).last()
     bowl2 = DistributionBowl.objects.filter(bbo_id=2).last()
     bowl3 = DistributionBowl.objects.filter(bbo_id=3).last()
     bowl4 = DistributionBowl.objects.filter(bbo_id=4).last()
+
+    water_consumption_in = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').first()
+    air_supply = ParameterFromAnalogSensorForBBO.objects.filter(name='air_supply').first()
+    current_air_consumption = air_supply.value/water_consumption_in.value
+
     sum = 0
     res = 0
     hpk_today = (ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
@@ -69,7 +78,8 @@ def data_func_for_parameter():
     max_value = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
                                                                time__range=[f'{datetime.datetime.today().date()} 00:00:00', f'{datetime.datetime.today().date()} 23:59:59']).aggregate(
         Max('value'))
-
+    if max_value['value__max'] is None:
+        max_value['value__max'] = 0
     avg_HPK_today = res
     avg_HPK_yesterday = None
     max_HPK_yesterday = None
@@ -78,6 +88,8 @@ def data_func_for_parameter():
         max_HPK_yesterday = ParameterFromAnalogSensorForBBO.objects.filter(name='max_HPK_yesterday').first()
     except Exception as _ex:
         print(_ex)
+        avg_HPK_yesterday = 0
+        max_HPK_yesterday = 0
     return dict(
         bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
         bbo2=ParameterFromAnalogSensorForBBOSerializer(qs2, many=True).data,
@@ -85,6 +97,10 @@ def data_func_for_parameter():
         bbo4=ParameterFromAnalogSensorForBBOSerializer(qs4, many=True).data,
         common=ParameterFromAnalogSensorForBBOSerializer(qs5, many=True).data,
         air_flow_volume=ManagementVolumeFlowForBBOSerializer(qs6, many=False).data,
+        air_concentration1=ManagementConcentrationFlowForBBOSerializer(conc1, many=False).data,
+        air_concentration2=ManagementConcentrationFlowForBBOSerializer(conc2, many=False).data,
+        air_concentration3=ManagementConcentrationFlowForBBOSerializer(conc3, many=False).data,
+        air_concentration4=ManagementConcentrationFlowForBBOSerializer(conc4, many=False).data,
         work_mode=WorkModeSerializer(mode, many=False).data,
         avg_hpk_today=avg_HPK_today,
         max_hpk_today=round(max_value['value__max'], 2),
@@ -93,7 +109,8 @@ def data_func_for_parameter():
         bowl1=DistributionBowlSerializer(bowl1, many=False).data,
         bowl2=DistributionBowlSerializer(bowl2, many=False).data,
         bowl3=DistributionBowlSerializer(bowl3, many=False).data,
-        bowl4=DistributionBowlSerializer(bowl4, many=False).data
+        bowl4=DistributionBowlSerializer(bowl4, many=False).data,
+        current_air_consumption=round(current_air_consumption, 2)
     )
     # queryset = ParameterFromAnalogSensorForBBO.objects.all()
     # data = []
@@ -159,13 +176,22 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             qs2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2).order_by('-id')[:11]
             qs3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3).order_by('-id')[:11]
             qs4 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=4).order_by('-id')[:11]
-            qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:8]
+            qs5 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=5).order_by('-id')[:7]
             qs6 = ManagementVolumeFlowForBBO.objects.last()
+            conc1 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=1).last()
+            conc2 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=2).last()
+            conc3 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=3).last()
+            conc4 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=4).last()
             mode = WorkMode.objects.last()
             bowl1 = DistributionBowl.objects.filter(bbo_id=1).last()
             bowl2 = DistributionBowl.objects.filter(bbo_id=2).last()
             bowl3 = DistributionBowl.objects.filter(bbo_id=3).last()
             bowl4 = DistributionBowl.objects.filter(bbo_id=4).last()
+
+            water_consumption_in = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').first()
+            air_supply = ParameterFromAnalogSensorForBBO.objects.filter(name='air_supply').first()
+            current_air_consumption = air_supply.value / water_consumption_in.value
+
             sum = 0
             res = 0
             hpk_today = (ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
@@ -195,6 +221,8 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
                 max_HPK_yesterday = ParameterFromAnalogSensorForBBO.objects.filter(name='max_HPK_yesterday').first()
             except Exception as _ex:
                 print(_ex)
+                avg_HPK_yesterday=0
+                max_HPK_yesterday=0
 
             return dict(
                 bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
@@ -203,6 +231,10 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
                 bbo4=ParameterFromAnalogSensorForBBOSerializer(qs4, many=True).data,
                 common=ParameterFromAnalogSensorForBBOSerializer(qs5, many=True).data,
                 air_flow_volume=ManagementVolumeFlowForBBOSerializer(qs6, many=False).data,
+                air_concentration1=ManagementConcentrationFlowForBBOSerializer(conc1, many=False).data,
+                air_concentration2=ManagementConcentrationFlowForBBOSerializer(conc2, many=False).data,
+                air_concentration3=ManagementConcentrationFlowForBBOSerializer(conc3, many=False).data,
+                air_concentration4=ManagementConcentrationFlowForBBOSerializer(conc4, many=False).data,
                 work_mode=WorkModeSerializer(mode, many=False).data,
                 avg_hpk_today=avg_HPK_today,
                 max_hpk_today=round(max_value['value__max'], 2),
@@ -211,7 +243,8 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
                 bowl1=DistributionBowlSerializer(bowl1, many=False).data,
                 bowl2=DistributionBowlSerializer(bowl2, many=False).data,
                 bowl3=DistributionBowlSerializer(bowl3, many=False).data,
-                bowl4=DistributionBowlSerializer(bowl4, many=False).data
+                bowl4=DistributionBowlSerializer(bowl4, many=False).data,
+                current_air_consumption=round(current_air_consumption, 2)
             )
 
 

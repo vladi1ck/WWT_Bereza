@@ -34,15 +34,17 @@ from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSen
 
 class GetDatesForLabValue(GenericAPIView):
     serializer_class = labValueSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (AllowAny,)
 
     def get(self, request):
+
         date = []
         objs = LabValue.objects.all()
         i = 0
         for obj in objs:
-            date.insert(i, obj.datetime.date())
-            i = i + 1
+            if obj.datetime is not None:
+                date.insert(i, obj.datetime.date())
+                i = i + 1
         # print(date)
         out = list(dict.fromkeys(date))
         # print(out)
@@ -77,7 +79,7 @@ class GetLabValueFromID(GenericAPIView):
         lab = []
         lab_id = request.GET.get('id')
         objs = LabValue.objects.filter(id=lab_id)
-        print(lab)
+
         serializer = self.serializer_class(objs, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -90,11 +92,11 @@ class UpdateLabValueByID(GenericAPIView):
         # lab_id = request.PUT.get('id')
         try:
             lab_val = LabValue.objects.get(pk=lab_id)
-            print(lab_val)
+
         except labValueSerializer.DoesNotExist:
             return JsonResponse({'message': 'The lab_val does not exist'}, status=status.HTTP_404_NOT_FOUND)
         new_data = JSONParser().parse(request)
-        print(new_data)
+
         tutorial_serializer = labValueSerializer(lab_val, data=new_data)
         if tutorial_serializer.is_valid():
             tutorial_serializer.save()
@@ -131,16 +133,19 @@ class PostLabValueView(GenericAPIView):
     #     return response
 
     def post(self, request):
-        print(request.data)
         if request.data['datetime']:
             datetime_lab = request.data['datetime']
         else:
             datetime_lab = datetime.datetime.now()
         del request.data['datetime']
+        if request.data['modified_by']:
+            modified = request.data['modified_by']
+        del request.data['modified_by']
         for i in range(len(request.data)):
             # print(request.data[f'bbo{i+1}'])
             request.data[f'bbo{i + 1}']['bbo_id'] = i + 1
             request.data[f'bbo{i + 1}']['datetime'] = datetime_lab
+            request.data[f'bbo{i + 1}']['modified_by'] = modified
 
             serializer = self.serializer_class(data=request.data[f'bbo{i + 1}'])
             valid = serializer.is_valid(raise_exception=True)
@@ -156,7 +161,6 @@ class PostLabValueView(GenericAPIView):
             if val is not None:
                 data = self.serializer_class(val, many=False).data
                 arr.insert(bbo, data)
-        print(arr)
 
         response = {
             'success': True,
@@ -168,7 +172,7 @@ class PostLabValueView(GenericAPIView):
                 response[f'data_bbo_{i + 1}'] = arr[i]
         else:
             response['message'] = 'No Data'
-        print(response)
+
         status_code = status.HTTP_200_OK
         return Response(response, status=status_code)
 
@@ -179,7 +183,7 @@ class GetLabValueView(GenericAPIView):
 
     def get(self, request):
         bbo_id = request.data.get("bbo_id")
-        values = ProjValue.objects.all().filter(bbo_id=bbo_id).last()
+        values = LabValue.objects.all().filter(bbo_id=bbo_id).last()
         if values is None:
             response = {
                 'success': True,
@@ -204,12 +208,27 @@ class PostProjValueView(GenericAPIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-        valid = serializer.is_valid(raise_exception=True)
 
-        if valid:
-            status_code = status.HTTP_200_OK
-            serializer.save()
+        if request.data['datetime']:
+            datetime_lab = request.data['datetime']
+        else:
+            datetime_lab = datetime.datetime.now()
+        del request.data['datetime']
+        if request.data['modified_by']:
+            modified = request.data['modified_by']
+        del request.data['modified_by']
+        for i in range(len(request.data)):
+            # print(request.data[f'bbo{i+1}'])
+            request.data[f'bbo{i + 1}']['bbo_id'] = i + 1
+            request.data[f'bbo{i + 1}']['datetime'] = datetime_lab
+            request.data[f'bbo{i + 1}']['modified_by'] = modified
+
+            serializer = self.serializer_class(data=request.data[f'bbo{i + 1}'])
+            valid = serializer.is_valid(raise_exception=True)
+
+            if valid:
+                status_code = status.HTTP_200_OK
+                serializer.save()
 
         arr = []
         bbos = BBO.objects.all()
@@ -218,7 +237,6 @@ class PostProjValueView(GenericAPIView):
             if val is not None:
                 data = self.serializer_class(val, many=False).data
                 arr.insert(bbo, data)
-        print(arr)
 
         response = {
             'success': True,
@@ -230,7 +248,7 @@ class PostProjValueView(GenericAPIView):
                 response[f'data_bbo_{i + 1}'] = arr[i]
         else:
             response['message'] = 'No Data'
-        print(response)
+
         status_code = status.HTTP_200_OK
         return Response(response, status=status_code)
 
@@ -273,7 +291,6 @@ class GetAllBBOProjValueView(GenericAPIView):
             if val is not None:
                 data = self.serializer_class(val, many=False).data
                 arr.insert(bbo, data)
-        print(arr)
 
         response = {
             'success': True,
@@ -287,7 +304,6 @@ class GetAllBBOProjValueView(GenericAPIView):
                 response[f'data_bbo_{i + 1}'] = arr[i]
         else:
             response['message'] = 'No Data'
-        print(response)
 
         return Response(response, status=status.HTTP_200_OK)
 
@@ -300,7 +316,7 @@ class GetAllBBOLabValueView(GenericAPIView):
         arr = []
         bbos = BBO.objects.all()
         for bbo in range(len(bbos)):
-            val = LabValue.objects.filter(bbo_id=bbo + 1).last()
+            val = LabValue.objects.filter(bbo_id=bbo + 1).order_by('datetime').last()
             if val is not None:
                 data = self.serializer_class(val, many=False).data
                 arr.insert(bbo, data)
@@ -312,7 +328,7 @@ class GetAllBBOLabValueView(GenericAPIView):
         }
         temp = {}
         if len(arr) != 0:
-            serializer1 = self.serializer_class(LabValue.objects.filter(bbo_id=1).last(), many=False)
+            serializer1 = self.serializer_class(LabValue.objects.filter(bbo_id=1).order_by('datetime').last(), many=False)
             response['datetime'] = serializer1.data['datetime']
             for i in range(len(arr)):
                 temp[f'bbo_{i + 1}'] = arr[i]
@@ -330,6 +346,8 @@ def stat_detail(request, ):
     first_date = request.GET.get('first_date')
     last_date = request.GET.get('last_date')
     stat = {}
+    if len(bbo_id) == 0:
+        bbo_id = [5]
     if name and bbo_id is not None:
         for i in range(len(bbo_id)):
             for j in range(len(name)):
@@ -346,6 +364,7 @@ def stat_detail(request, ):
                                     name=name[j],
                                     time__range=[first_date, last_date]
                                 )
+                                .order_by('id')
                             ),
                             many=True).data)
                     if not stat[f'bbo_{bbo_id[i]}_{name[j]}']:
@@ -516,30 +535,76 @@ class ManagementRecycleForBBOView(GenericAPIView):
     permission_classes = (AllowAny,)
 
     def get(self, request):
-        values1 = ManagementRecycleForBBO.objects.last()
-        serializer1 = self.serializer_class(values1, many=False)
+
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = ManagementRecycleForBBO.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                new_data = data.copy()
+                for i in new_data:
+                    if new_data[f'{i}'] is None:
+                        del data[i]
+                # print(data)
+                arr.insert(bbo, data)
+
         response = {
             'success': True,
             'status_code': status.HTTP_200_OK,
-            'data': serializer1.data,
+            'message': 'Successfully fetched notification border values',
         }
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
         return Response(response, status=status.HTTP_200_OK)
 
     def post(self, request):
-        data = JSONParser().parse(request)
-        serializer = ManagementRecycleForBBOSerializer(data=data)
+        data = request.data
+        for i in range(len(data)):
+            # print(request.data[f'bbo{i + 1}'])
 
-        valid = serializer.is_valid(raise_exception=True)
-        if valid:
-            status_code = status.HTTP_200_OK
-            serializer.save()
+            serializer = self.serializer_class(data=data[f'bbo{i + 1}'])
+            valid = serializer.is_valid(raise_exception=True)
+
+            if valid:
+                status_code = status.HTTP_200_OK
+                serializer.save()
+
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = ManagementRecycleForBBO.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+                new_data = data.copy()
+                for i in new_data:
+                    if new_data[f'{i}'] is None:
+                        del data[i]
+                # print(data)
+                arr.insert(bbo, data)
 
         response = {
             'success': True,
-            'status_code': status_code,
-            'message': 'Successfully saved values',
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully saved notification border values',
         }
-        return Response(response, status=status_code)
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class WorkModeView(GenericAPIView):
@@ -547,8 +612,9 @@ class WorkModeView(GenericAPIView):
     permission_classes = (AllowAny,)
 
     def post(self, request):
-        data = JSONParser().parse(request)
-        serializer = WorkModeSerializer(data=data)
+        # print(request.data)
+        # data = JSONParser().parse(request)
+        serializer = WorkModeSerializer(data=request.data)
         valid = serializer.is_valid(raise_exception=True)
         if valid:
             status_code = status.HTTP_200_OK

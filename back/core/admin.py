@@ -61,7 +61,7 @@ class ManagementVolumeFlowForBBOAdmin(admin.ModelAdmin):
 
 @admin.register(CommandForBBO)
 class MyCommandForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'command', 'time', 'bbo_id',)
+    list_display = ('name', 'command', 'value', 'time', 'bbo_id',)
 
 
 @admin.register(Notification)
