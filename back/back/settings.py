@@ -36,9 +36,10 @@ INTERNAL_IPS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'drf_yasg',
     'channels',
-    'daphne',
+
     'rest_framework_swagger',
     'core',
     'django.contrib.admin',

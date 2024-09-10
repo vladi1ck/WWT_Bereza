@@ -26,10 +26,11 @@ from .serializers import (labValueSerializer, projValueSerializer, ParameterFrom
                           BBOSerializer, ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer,
                           NotificationSerializer, ManagementRecycleForBBOSerializer,
                           ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, NotificationManagerSerializer,
-                          DistributionBowlSerializer)
+                          DistributionBowlSerializer, DiffusorSerializer, WorkSettingsGroupSerializer,
+                          WorkSettingsSingleSerializer, SiltPumpStationSerializer)
 from .models import Parameter, User, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, BBO, \
     ManagementConcentrationFlowForBBO, Notification, ManagementRecycleForBBO, WorkMode, NotificationManager, \
-    DistributionBowl
+    DistributionBowl, Diffusor, WorkSettingsSingle, WorkSettingsGroup, SiltPumpStation
 
 
 class GetDatesForLabValue(GenericAPIView):
@@ -328,7 +329,8 @@ class GetAllBBOLabValueView(GenericAPIView):
         }
         temp = {}
         if len(arr) != 0:
-            serializer1 = self.serializer_class(LabValue.objects.filter(bbo_id=1).order_by('datetime').last(), many=False)
+            serializer1 = self.serializer_class(LabValue.objects.filter(bbo_id=1).order_by('datetime').last(),
+                                                many=False)
             response['datetime'] = serializer1.data['datetime']
             for i in range(len(arr)):
                 temp[f'bbo_{i + 1}'] = arr[i]
@@ -370,11 +372,11 @@ def stat_detail(request, ):
                     if not stat[f'bbo_{bbo_id[i]}_{name[j]}']:
                         del stat[f'bbo_{bbo_id[i]}_{name[j]}']
                 except ParameterFromAnalogSensorForBBO.DoesNotExist:
-                    return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_404_NOT_FOUND)
+                    return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_400_BAD_REQUEST)
         stat_serializer = []
         if request.method == 'GET':
             if stat == {}:
-                return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_404_NOT_FOUND)
+                return JsonResponse({'message': 'Data does not exist'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 # for i in range(len(stat)):
                 #     stat_serializer.append(ParameterFromAnalogSensorForBBOSerializer(stat[i], many=True).data)
@@ -449,6 +451,11 @@ class AirManagerView(GenericAPIView):
         nam_6 = data['name'][:6]
         data['current_value'] = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'],
                                                                                name=nam_6).first().value
+        settings = WorkSettingsSingle.objects.filter(id=data['group_number']).last()
+        data['work_status'] = settings.in_work
+        print(settings.in_work)
+        print(data['work_status'])
+
         if ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=data['bbo_id'], name=nam_6).first().is_accident:
             data['is_not_accident'] = False
         else:
@@ -511,8 +518,10 @@ class ManagementVolumeFlowForBBOView(GenericAPIView):
     def post(self, request):
         data = JSONParser().parse(request)
 
+        settings = WorkSettingsSingle.objects.filter(id=data['group_number']).last()
         avg_oxy = calculate_avg_oxygen()
         data['avg_oxygen_rate'] = avg_oxy
+        data['work_status'] = settings.in_work
 
         serializer = ManagementVolumeFlowForBBOSerializer(data=data)
 
@@ -768,6 +777,157 @@ class DistributionBowlView(GenericAPIView):
             'success': True,
             'status_code': status.HTTP_200_OK,
             'message': 'Successfully saved distribution bowl values',
+        }
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class DiffusorView(GenericAPIView):
+    serializer_class = DiffusorSerializer
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        # print(data)
+        serializer = self.serializer_class(data=data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            status_code = status.HTTP_200_OK
+            serializer.save()
+
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = Diffusor.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+
+                arr.insert(bbo, data)
+
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully saved distribution bowl values',
+        }
+        temp = {}
+        if len(arr) != 0:
+            for i in range(len(arr)):
+                temp[f'bbo_{i + 1}'] = arr[i]
+            response['data'] = temp
+        else:
+            response['message'] = 'No Data'
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class WorkSettingsGroupView(GenericAPIView):
+    serializer_class = WorkSettingsGroupSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        val = WorkSettingsGroup.objects.all()
+        data = self.serializer_class(val, many=True).data
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'data': data,
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class WorkSettingsGroupViewUpdate(GenericAPIView):
+    serializer_class = WorkSettingsGroupSerializer
+    permission_classes = (AllowAny,)
+
+    def put(self, request, group_id):
+        try:
+            lab_val = WorkSettingsGroup.objects.get(pk=group_id)
+
+        except self.serializer_class.DoesNotExist:
+            return JsonResponse({'message': 'The lab_val does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        new_data = JSONParser().parse(request)
+
+        settings_serializer = self.serializer_class(lab_val, data=new_data)
+        if settings_serializer.is_valid():
+            settings_serializer.save()
+            return JsonResponse(settings_serializer.data)
+        return JsonResponse(settings_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WorkSettingsSingleView(GenericAPIView):
+    serializer_class = WorkSettingsSingleSerializer
+    permission_classes = (AllowAny,)
+
+    def get(self, request):
+        val = WorkSettingsSingle.objects.all()
+        data = self.serializer_class(val, many=True).data
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'data': data,
+        }
+
+        return Response(response, status=status.HTTP_200_OK)
+
+
+class WorkSettingsSingleViewUpdate(GenericAPIView):
+    serializer_class = WorkSettingsSingleSerializer
+    permission_classes = (AllowAny,)
+
+    def put(self, request, single_id):
+        try:
+            lab_val = WorkSettingsSingle.objects.get(pk=single_id)
+
+        except self.serializer_class.DoesNotExist:
+            return JsonResponse({'message': 'The lab_val does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        new_data = JSONParser().parse(request)
+
+        settings_serializer = self.serializer_class(lab_val, data=new_data)
+        if settings_serializer.is_valid():
+            settings_serializer.save()
+            return JsonResponse(settings_serializer.data)
+        return JsonResponse(settings_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class SiltPumpStationView(GenericAPIView):
+    serializer_class = SiltPumpStationSerializer
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        data = JSONParser().parse(request)
+        # print(data)
+        data['bbo_id'] = 5
+        serializer = self.serializer_class(data=data)
+        valid = serializer.is_valid(raise_exception=True)
+
+        if valid:
+            status_code = status.HTTP_200_OK
+            serializer.save()
+
+        arr = []
+        data = []
+        bbos = BBO.objects.all()
+        for bbo in range(len(bbos)):
+            val = SiltPumpStation.objects.filter(bbo_id=bbo + 1).last()
+            if val is not None:
+                data = self.serializer_class(val, many=False).data
+
+                arr.insert(bbo, data)
+
+        response = {
+            'success': True,
+            'status_code': status.HTTP_200_OK,
+            'message': 'Successfully saved silt state',
         }
         temp = {}
         if len(arr) != 0:

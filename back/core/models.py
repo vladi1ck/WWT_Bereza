@@ -72,6 +72,38 @@ class BBO(models.Model):
         return f'{self.name}'
 
 
+class WorkSettingsGroup(models.Model):
+    NOTHING = 0
+    VALVE = 1
+    BLOWER = 2
+    RECYCLE = 3
+
+    GROUP_CHOICES = (
+        (NOTHING, '-'),
+        (VALVE, 'Затворы'),
+        (BLOWER, 'Воздуходувка'),
+        (RECYCLE, 'Рецикл'),
+    )
+
+    bbo_id = models.ForeignKey(to=BBO, related_name='work_settings', on_delete=models.CASCADE, editable=True,
+                               default="")
+    name = models.CharField(max_length=255, null=True)
+    group_number = models.IntegerField(choices=GROUP_CHOICES, default=0)
+    in_work = models.BooleanField(default=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.group_number}'
+
+
+class WorkSettingsSingle(models.Model):
+    group_number = models.ForeignKey(to=WorkSettingsGroup, default=0, on_delete=models.CASCADE,
+                                     related_name='settings_group', editable=True)
+    name = models.CharField(max_length=255, null=True)
+    in_work = models.BooleanField(default=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+
 class WorkMode(models.Model):
     mode = models.PositiveSmallIntegerField(default=0)  # 0 - Локальный, 1 - Автоматический
     time = models.DateTimeField(auto_now_add=True)
@@ -149,6 +181,8 @@ class ManagementConcentrationFlowForBBO(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='air_concentration_management_id', on_delete=models.CASCADE,
                                editable=True,
                                default="")
+    group_number = models.ForeignKey(to=WorkSettingsSingle, default=0, on_delete=models.CASCADE,
+                                     related_name='concentration_group', editable=True)
     name = models.CharField(max_length=255, null=False)
     current_value = models.FloatField()
     given_value = models.FloatField()
@@ -160,6 +194,7 @@ class ManagementConcentrationFlowForBBO(models.Model):
     air_max_percent = models.IntegerField(default=0)
     air_step = models.IntegerField(default=0)
     time = models.DateTimeField(auto_now_add=True)
+    work_status = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return f'{self.name}'
@@ -169,11 +204,13 @@ class ManagementConcentrationFlowForBBO(models.Model):
 class ManagementVolumeFlowForBBO(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='air_volume_management_id', on_delete=models.CASCADE, editable=True,
                                default="")
+    group_number = models.ForeignKey(to=WorkSettingsSingle, default=0, on_delete=models.CASCADE,
+                                     related_name='volume_group', editable=True)
     name = models.CharField(max_length=255, null=False, default='avg_oxy_rate')
     avg_oxygen_rate = models.FloatField()  # записывать значения во вьюхе (где его брать???) при получение создавать?
     min_avg_oxygen = models.FloatField()
     max_avg_oxygen = models.FloatField()
-
+    work_status = models.BooleanField(default=False)
     time = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -184,6 +221,9 @@ class ManagementVolumeFlowForBBO(models.Model):
 class ManagementRecycleForBBO(models.Model):
     bbo_id = models.ForeignKey(to=BBO, related_name='recycle_management_id', on_delete=models.CASCADE, editable=True,
                                default="")
+    group_number = models.ForeignKey(to=WorkSettingsSingle, default=0, on_delete=models.CASCADE,
+                                     related_name='recycle_group', editable=True)
+
     name = models.CharField(max_length=255, null=True)
     value = models.FloatField(null=True)
 
@@ -229,8 +269,8 @@ class CommandForBBO(models.Model):
                                default="")
     name = models.CharField(max_length=255, null=False)  # Название нужной комманды
     command = models.IntegerField(null=True,
-        validators=[MinValueValidator(-1), MaxValueValidator(1)]
-    )  # -1 - понижать, 0 - ничего, 1 - повышать.
+                                  validators=[MinValueValidator(-1), MaxValueValidator(1)]
+                                  )  # -1 - понижать, 0 - ничего, 1 - повышать.
     value = models.FloatField(null=True)
     time = models.DateTimeField(auto_now_add=True)
 
@@ -242,6 +282,8 @@ class Notification(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(2)])  # 0 - info, 1 - crit, 2 - accident.
     title = models.CharField(max_length=255, blank=True)
     message = models.CharField(max_length=255, blank=True)
+    is_read = models.BooleanField(default=False)
+    read_time = models.DateTimeField(null=True)
     created_date = models.DateTimeField(auto_now_add=True)
 
 
@@ -271,4 +313,26 @@ class DistributionBowl(models.Model):
                                default="")
     name = models.CharField(max_length=255, null=False)
     value = models.FloatField(null=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+
+class Diffusor(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='diffusor_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    name = models.CharField(max_length=255, null=False)
+    value = models.FloatField(null=True)
+    min_pressure = models.FloatField(null=True)
+    max_pressure = models.FloatField(null=True)
+    timeout = models.IntegerField(null=True)
+    step_percent = models.IntegerField(null=True)
+    max_percent1 = models.IntegerField(null=True)
+    max_percent2 = models.IntegerField(null=True)
+    max_percent3 = models.IntegerField(null=True)
+    time = models.DateTimeField(auto_now_add=True)
+
+
+class SiltPumpStation(models.Model):
+    bbo_id = models.ForeignKey(to=BBO, related_name='silt_pump_station_id', on_delete=models.CASCADE, editable=True,
+                               default="")
+    state = models.BooleanField(default=False)
     time = models.DateTimeField(auto_now_add=True)

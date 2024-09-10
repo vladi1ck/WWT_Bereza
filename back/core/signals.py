@@ -7,11 +7,11 @@ import time
 
 import snap7.client
 from asgiref.sync import sync_to_async, async_to_sync
-from async_signals import Signal, receiver
 from django.db.models import Max
 
-from django.db.models.signals import post_save, pre_delete, pre_save
+from django.db.models.signals import post_save, pre_delete, pre_save, m2m_changed
 from django.contrib.auth.models import User
+from django.dispatch import receiver
 from snap7.types import Areas
 from snap7.util import get_real, get_int, set_int
 
@@ -20,7 +20,8 @@ from . import logic_for_bbo
 
 from .logic_for_bbo import ParameterFromAnalogSensorForBBOView
 from .models import ManagementConcentrationFlowForBBO, CommandForBBO, BBO, Notification, \
-    ParameterFromAnalogSensorForBBO, ManagementRecycleForBBO, ManagementVolumeFlowForBBO, WorkMode, NotificationManager
+    ParameterFromAnalogSensorForBBO, ManagementRecycleForBBO, ManagementVolumeFlowForBBO, WorkMode, NotificationManager, \
+    WorkSettingsSingle, WorkSettingsGroup, SiltPumpStation
 
 live_1 = True
 live_1_1 = True
@@ -28,91 +29,6 @@ live_1_2 = True
 live_1_3 = True
 live_1_4 = True
 
-
-# class CommandThread(threading.Thread):
-#     def __init__(self, instance, **kwargs):
-#         self.instance = instance
-#         super(CommandThread, self).__init__(**kwargs)
-#
-#     def run(self):
-#         print(self.instance.name)
-#
-#         print(f'In work, remaining {self.instance.timeout * 60}sec')
-#         oxy1 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-#         oxy2 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-#         oxy3 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-#         oxy4 = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=self.instance.bbo_id.id).last()
-#         oxygen_1_1 = [oxy1, oxy2, oxy3]
-#         oxygen_1_2 = [oxy1]
-#         oxygen_1_3 = [oxy2, oxy3]
-#         # accidents_1_1 = [oxy1.is_not_accident, oxy2.is_not_accident, oxy3.is_not_accident]
-#         accidents_1_2 = [oxy1.is_not_accident]
-#         # accidents_1_3 = [oxy2.is_not_accident, oxy3.is_not_accident]
-#         average = 0
-#         deviation_rate = 0
-#         given_value = 0
-#         average_1_1 = 0
-#         average_1_2 = 0
-#         average_1_3 = 0
-#         deviation_rate_1_1 = 0
-#         deviation_rate_1_2 = 0
-#         deviation_rate_1_3 = 0
-#         given_value_1_1 = 0
-#         given_value_1_2 = 0
-#         given_value_1_3 = 0
-#         try:
-#             middle_requirement_oxygen_1 = oxy1.bbo_rate * (oxy1.current_value - oxy1.given_value)
-#             middle_requirement_oxygen_2 = oxy2.bbo_rate * (oxy2.current_value - oxy2.given_value)
-#             middle_requirement_oxygen_3 = oxy3.bbo_rate * (oxy3.current_value - oxy3.given_value)
-#             middle_requirement_oxygen_4 = oxy4.bbo_rate * (oxy4.current_value - oxy4.given_value)
-#         except Exception as ex:
-#             print(ex)
-#             middle_requirement_oxygen_1 = 0
-#             middle_requirement_oxygen_2 = 0
-#             middle_requirement_oxygen_3 = 0
-#             middle_requirement_oxygen_4 = 0
-#         middle_requirement_oxygen = (middle_requirement_oxygen_1 + middle_requirement_oxygen_2 +
-#                                      middle_requirement_oxygen_3 + middle_requirement_oxygen_4)
-#         print(middle_requirement_oxygen)
-#         # for i in itertools.compress(oxygen_1_1, accidents_1_1):
-#         #     average_1_1 = average_1_1 + int(i.current_value)
-#         #     deviation_rate_1_1 = deviation_rate_1_1 + int(i.deviation_rate)
-#         #     given_value_1_1 = given_value_1_1 + int(i.given_value)
-#
-#         for i in itertools.compress(oxygen_1_2, accidents_1_2):
-#             average_1_2 = average_1_2 + int(i.current_value)
-#             deviation_rate_1_2 = deviation_rate_1_2 + int(i.deviation_rate)
-#             given_value_1_2 = given_value_1_2 + int(i.given_value)
-#
-#         # for i in itertools.compress(oxygen_1_3, accidents_1_3):
-#         #     average_1_3 = average_1_3 + int(i.current_value)
-#         #     deviation_rate_1_3 = deviation_rate_1_3 + int(i.deviation_rate)
-#         #     given_value_1_3 = given_value_1_3 + int(i.given_value)
-#
-#         if self.instance.name == 'oxygen_1_2' or 'oxygen_2_2' or 'oxygen_3_2':
-#             average = average_1_2
-#             deviation_rate = deviation_rate_1_2
-#             given_value = given_value_1_2
-#             pass
-#
-#         else:
-#             average = 0
-#             deviation_rate = 0
-#             given_value = 0
-#
-#         time.sleep(self.instance.timeout * 60)
-#         if average < given_value - deviation_rate:
-#             print(f'{self.instance.name} - COMMAND: UP')
-#             return 1
-#         elif average > given_value + deviation_rate:
-#             print(f'{self.instance.name} - COMMAND: DOWN')
-#             return -1
-#         elif average in range(given_value - deviation_rate, given_value + deviation_rate):
-#             print(f'{self.instance.name} - COMMAND: Nothing')
-#             return 0
-#         else:
-#             print(f'{self.instance.name} - COMMAND: Error')
-#             return -9999
 
 def calc_recycle(bbo_id):
     water = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').first().value
@@ -161,7 +77,6 @@ def calc_recycle(bbo_id):
     freq_pump = round(freq_pump)
     anaerobe_percent = round(anaerobe_percent)
     nitrate_percent = round(nitrate_percent)
-
 
     Notification.objects.create(
         bbo_id=BBO.objects.get(id=5),
@@ -215,26 +130,61 @@ def calc_recycle(bbo_id):
     return
 
 
+@receiver(signal=post_save, sender=WorkSettingsGroup)
+def create_notification(sender, instance, **kwargs):
+    val = WorkSettingsSingle.objects.filter(group_number=WorkSettingsGroup.objects.get(
+        group_number=instance.group_number))
+    for i in val:
+        i.in_work = instance.in_work
+        i.save()
+
+
+@receiver(signal=post_save, sender=WorkSettingsSingle)
+def create_notification_single(sender, instance, **kwargs):
+    val = instance
+
+    # if val.group_number == WorkSettingsGroup.VALVE:
+    #     val = ManagementConcentrationFlowForBBO.objects.filter(group_number=instance.id)
+    #     print(val)
+    #     for i in val:
+    #         i.work_status = instance.in_work
+    #         print(i.work_status)
+    #         i.save()
+    # elif val.group_number == WorkSettingsGroup.BLOWER:
+    #     val = ManagementVolumeFlowForBBO.objects.filter(group_number=instance.id)
+    #     print(val)
+    #     for i in val:
+    #         i.work_status = instance.in_work
+    #         print(i.work_status)
+    #         i.save()
+    # print(instance.group_number)
+    if not instance.in_work:
+        gr = WorkSettingsGroup.objects.filter(group_number=str(instance.group_number)).update(in_work=False)
+        # gr.in_work = False
+        # gr.update()
+
+
+
 @receiver(signal=post_save, sender=ManagementVolumeFlowForBBO)
 def create_notification_volume(instance, **kwargs):
     global live_1
+    if instance.work_status:
+        th1 = threading.Thread(target=calculate_avg_oxygen, args=(instance,))
 
-    th1 = threading.Thread(target=calculate_avg_oxygen, args=(instance,))
-
-    if live_1:
-        live_1 = False
-        th1.start()
-    try:
-        if th1.is_alive():
-            th1.join()
-    except Exception as _ex:
-        print(_ex)
-    finally:
-        live_1 = True
+        if live_1:
+            live_1 = False
+            th1.start()
+        try:
+            if th1.is_alive():
+                th1.join()
+        except Exception as _ex:
+            print(_ex)
+        finally:
+            live_1 = True
 
 
 def calculate_avg_oxygen(instance, **kwargs):
-    concentration = ManagementConcentrationFlowForBBO.objects.filetr(bbo_id=1).last
+    concentration = ManagementConcentrationFlowForBBO.objects.filter(bbo_id=1).last()
     result = -9999
 
     if instance.avg_oxygen_rate < instance.min_avg_oxygen:
@@ -244,7 +194,6 @@ def calculate_avg_oxygen(instance, **kwargs):
     elif instance.min_avg_oxygen <= instance.avg_oxygen_rate <= instance.max_avg_oxygen:
         result = 0
     if WorkMode.objects.last().mode == 1:
-
         CommandForBBO.objects.create(
             bbo_id=instance.bbo_id,
             name=instance.name,
@@ -262,7 +211,6 @@ def analysis_valve(instance):
 
         min_val = instance.given_value - instance.deviation_rate
         max_val = instance.given_value + instance.deviation_rate
-
 
         if instance.current_value < min_val:
             print(f'{instance.name} - COMMAND: UP')
@@ -319,39 +267,41 @@ def handler(sender, instance, **kwargs):
     th3 = threading.Thread(target=analysis_valve, args=(instance,))
     th4 = threading.Thread(target=analysis_valve, args=(instance,))
 
-    if instance.name == 'oxygen_1_1' and live_1_1:
-        live_1_1 = False
-        th1.start()
+    if instance.work_status:
 
-    elif instance.name == 'oxygen_1_2' and live_1_2:
-        live_1_2 = False
-        th2.start()
+        if instance.name == 'oxygen_1_1' and live_1_1:
+            live_1_1 = False
+            th1.start()
 
-    elif instance.name == 'oxygen_1_3' and live_1_3:
-        live_1_3 = False
-        th3.start()
+        elif instance.name == 'oxygen_1_2' and live_1_2:
+            live_1_2 = False
+            th2.start()
 
-    elif instance.name == 'oxygen_1_4' and live_1_4:
-        live_1_4 = False
-        th4.start()
+        elif instance.name == 'oxygen_1_3' and live_1_3:
+            live_1_3 = False
+            th3.start()
 
-    try:
-        if th1.is_alive():
-            th1.join()
-        if th2.is_alive():
-            th2.join()
-        if th3.is_alive():
-            th3.join()
-        if th4.is_alive():
-            th4.join()
+        elif instance.name == 'oxygen_1_4' and live_1_4:
+            live_1_4 = False
+            th4.start()
 
-    except Exception as _ex:
-        print(_ex)
-    finally:
-        live_1_1 = True
-        live_1_2 = True
-        live_1_3 = True
-        live_1_4 = True
+        try:
+            if th1.is_alive():
+                th1.join()
+            if th2.is_alive():
+                th2.join()
+            if th3.is_alive():
+                th3.join()
+            if th4.is_alive():
+                th4.join()
+
+        except Exception as _ex:
+            print(_ex)
+        finally:
+            live_1_1 = True
+            live_1_2 = True
+            live_1_3 = True
+            live_1_4 = True
 
 
 @receiver(signal=post_save, sender=ParameterFromAnalogSensorForBBO)
@@ -448,13 +398,25 @@ def create_notification(sender, instance, **kwargs):
                 title=instance.name,
                 message=f'[{BBO.objects.get(name=instance.bbo_id).rus_name}] Необходиомо перераспределить потоки активного ила по биоблокам'
             )
-    if instance.name == 'water_consumption_in' and instance.value > manager.water:
-        Notification.objects.create(
-            bbo_id=BBO.objects.get(id=5),
-            status_code=0,
-            title='common_notice',
-            message=f'[{BBO.objects.get(id=5).rus_name}] Есть возможность гидравлической перегрузки сооружений, при возможности сбросить сточные воды в резервные сооружения'
-        )
+
+    if instance.name == 'water_consumption_in':
+        if SiltPumpStation.objects.last() is None:
+            SiltPumpStation.objects.create(bbo_id=5, state=False)
+            silt_pump = SiltPumpStation.objects.last()
+        else:
+            silt_pump = SiltPumpStation.objects.last()
+        if silt_pump.state:
+            value = instance.value + 200
+        else:
+            value = instance.value
+        print(value)
+        if value > manager.water:
+            Notification.objects.create(
+                bbo_id=BBO.objects.get(id=5),
+                status_code=0,
+                title='common_notice',
+                message=f'[{BBO.objects.get(id=5).rus_name}] Есть возможность гидравлической перегрузки сооружений, при возможности сбросить сточные воды в резервные сооружения'
+            )
 
     if instance.name == 'HPK':
 
@@ -469,7 +431,7 @@ def create_notification(sender, instance, **kwargs):
 
     if instance.name == 'turbidity' and str(instance.bbo_id) == 'BBO4':
         for i in range(4):
-            calc_recycle(i+1)
+            calc_recycle(i + 1)
         turb1 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=1, name='turbidity').first()
         turb2 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=2, name='turbidity').first()
         turb3 = ParameterFromAnalogSensorForBBO.objects.filter(bbo_id=3, name='turbidity').first()

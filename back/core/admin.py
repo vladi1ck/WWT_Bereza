@@ -1,7 +1,7 @@
 from django.contrib.auth.admin import UserAdmin
 from .models import User, BBO, Parameter, LabValue, ProjValue, ParameterFromAnalogSensorForBBO, \
     ManagementConcentrationFlowForBBO, CommandForBBO, Notification, ManagementRecycleForBBO, ManagementVolumeFlowForBBO, \
-    WorkMode, NotificationManager, DistributionBowl
+    WorkMode, NotificationManager, DistributionBowl, Diffusor, WorkSettingsGroup, WorkSettingsSingle, SiltPumpStation
 from django.contrib import admin
 
 
@@ -46,17 +46,18 @@ class MyLabAdmin(admin.ModelAdmin):
 
 @admin.register(ParameterFromAnalogSensorForBBO)
 class MyParameterFromAnalogSensorForBBOAdmin(admin.ModelAdmin):
-    list_display = ('rus_name', 'bbo_id', 'time')
+    list_display = ('rus_name', 'value', 'bbo_id', 'time')
+    list_filter = ["bbo_id", 'name']
 
 
 @admin.register(ManagementConcentrationFlowForBBO)
 class MyManagementAirFlowForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'bbo_id', 'time')
+    list_display = ('name', 'work_status', 'bbo_id', 'time')
 
 
 @admin.register(ManagementVolumeFlowForBBO)
 class ManagementVolumeFlowForBBOAdmin(admin.ModelAdmin):
-    list_display = ('name', 'bbo_id', 'time')
+    list_display = ('name', 'work_status', 'bbo_id', 'time')
 
 
 @admin.register(CommandForBBO)
@@ -77,6 +78,26 @@ class MyNotificationManagerAdmin(admin.ModelAdmin):
 @admin.register(DistributionBowl)
 class MyDistributionBowlAdmin(admin.ModelAdmin):
     list_display = ('name', 'time')
+
+
+@admin.register(Diffusor)
+class MyDistributionBowlAdmin(admin.ModelAdmin):
+    list_display = ('name', 'time')
+
+
+@admin.register(WorkSettingsGroup)
+class MyWorkSettings(admin.ModelAdmin):
+    list_display = ('name', 'group_number', 'in_work')
+
+
+@admin.register(WorkSettingsSingle)
+class MyWorkSettingsS(admin.ModelAdmin):
+    list_display = ('name', 'in_work')
+
+
+@admin.register(SiltPumpStation)
+class MySiltPumpStation(admin.ModelAdmin):
+    list_display = ('time', 'state')
 
 
 admin.site.register(User, MyUserAdmin)

@@ -2,6 +2,8 @@ import asyncio
 import datetime
 import json
 from typing import Dict, Union, Any
+
+import channels.db
 from django.core import serializers
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync, sync_to_async
@@ -14,25 +16,26 @@ from rest_framework.utils.serializer_helpers import ReturnDict
 
 # from core.logic_for_bbo import AllParameterFromAnalogSensorForBBO1View
 from .models import Parameter, ParameterFromAnalogSensorForBBO, ManagementConcentrationFlowForBBO, CommandForBBO, \
-    Notification, ManagementVolumeFlowForBBO, WorkMode, DistributionBowl
+    Notification, ManagementVolumeFlowForBBO, WorkMode, DistributionBowl, Diffusor, SiltPumpStation, WorkSettingsSingle
 from .serializers import ParameterFromAnalogSensorForBBOSerializer, BBOSerializer, \
     ManagementConcentrationFlowForBBOSerializer, CommandForBBOSerializer, NotificationSerializer, \
-    ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, HPKSerializer, DistributionBowlSerializer
+    ManagementVolumeFlowForBBOSerializer, WorkModeSerializer, HPKSerializer, DistributionBowlSerializer, \
+    DiffusorSerializer, SiltPumpStationSerializer, WorkSettingsSingleSerializer
 
 
 def data_func_for_notification():
     qs = Notification.objects.all().order_by('-pk')[:10]
     return NotificationSerializer(qs, many=True).data
-    # queryset = Notification.objects.all()[:10]
-    # data = []
-    # message_count = len(queryset)
-    # if message_count > 10:
-    #     count = 10
-    # else:
-    #     count = message_count
-    # for item in range(count):
-    #     data.insert(item, queryset.order_by('-created_date')[item], )
-    # return data
+
+
+@channels.db.database_sync_to_async
+def change_notify(pk, is_read):
+    try:
+        read_time = str(datetime.datetime.now())
+        qs = Notification.objects.filter(pk=pk).update(is_read=is_read, read_time=read_time)
+        return NotificationSerializer(qs, many=False).data
+    except Exception as _ex:
+        print(_ex)
 
 
 def data_func_for_work_mode():
@@ -56,17 +59,24 @@ def data_func_for_parameter():
     bowl2 = DistributionBowl.objects.filter(bbo_id=2).last()
     bowl3 = DistributionBowl.objects.filter(bbo_id=3).last()
     bowl4 = DistributionBowl.objects.filter(bbo_id=4).last()
+    diffusor = Diffusor.objects.last()
+    silt_state = SiltPumpStation.objects.last()
+    avg_oxy_state = WorkSettingsSingle.objects.filter(id=1).last()
+    oxygen_1_1_state = WorkSettingsSingle.objects.filter(id=2).last()
+    oxygen_1_2_state = WorkSettingsSingle.objects.filter(id=3).last()
+    oxygen_1_3_state = WorkSettingsSingle.objects.filter(id=4).last()
+    oxygen_1_4_state = WorkSettingsSingle.objects.filter(id=5).last()
 
     water_consumption_in = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').first()
     air_supply = ParameterFromAnalogSensorForBBO.objects.filter(name='air_supply').first()
-    current_air_consumption = air_supply.value/water_consumption_in.value
+    current_air_consumption = air_supply.value / water_consumption_in.value
 
     sum = 0
     res = 0
     hpk_today = (ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
-                    time__range=[
-                                    f'{datetime.datetime.today().date()} 00:00:00',
-                                    f'{datetime.datetime.today().date()} 23:59:59'])
+                                                                time__range=[
+                                                                    f'{datetime.datetime.today().date()} 00:00:00',
+                                                                    f'{datetime.datetime.today().date()} 23:59:59'])
                  .all())
     for val in hpk_today:
         sum = sum + val.value
@@ -76,7 +86,9 @@ def data_func_for_parameter():
             print(_ex)
             res = 0
     max_value = ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
-                                                               time__range=[f'{datetime.datetime.today().date()} 00:00:00', f'{datetime.datetime.today().date()} 23:59:59']).aggregate(
+                                                               time__range=[
+                                                                   f'{datetime.datetime.today().date()} 00:00:00',
+                                                                   f'{datetime.datetime.today().date()} 23:59:59']).aggregate(
         Max('value'))
     if max_value['value__max'] is None:
         max_value['value__max'] = 0
@@ -110,7 +122,14 @@ def data_func_for_parameter():
         bowl2=DistributionBowlSerializer(bowl2, many=False).data,
         bowl3=DistributionBowlSerializer(bowl3, many=False).data,
         bowl4=DistributionBowlSerializer(bowl4, many=False).data,
-        current_air_consumption=round(current_air_consumption, 2)
+        current_air_consumption=round(current_air_consumption, 2),
+        diffusor=DiffusorSerializer(diffusor, many=False).data,
+        silt_pump_state=SiltPumpStationSerializer(silt_state, many=False).data,
+        avg_oxy_state=WorkSettingsSingleSerializer(avg_oxy_state, many=False).data,
+        oxygen_1_1_state=WorkSettingsSingleSerializer(oxygen_1_1_state, many=False).data,
+        oxygen_1_2_state=WorkSettingsSingleSerializer(oxygen_1_2_state, many=False).data,
+        oxygen_1_3_state=WorkSettingsSingleSerializer(oxygen_1_3_state, many=False).data,
+        oxygen_1_4_state=WorkSettingsSingleSerializer(oxygen_1_4_state, many=False).data,
     )
     # queryset = ParameterFromAnalogSensorForBBO.objects.all()
     # data = []
@@ -187,6 +206,13 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             bowl2 = DistributionBowl.objects.filter(bbo_id=2).last()
             bowl3 = DistributionBowl.objects.filter(bbo_id=3).last()
             bowl4 = DistributionBowl.objects.filter(bbo_id=4).last()
+            diffusor = Diffusor.objects.last()
+            silt_state = SiltPumpStation.objects.last()
+            avg_oxy_state = WorkSettingsSingle.objects.filter(id=1).last()
+            oxygen_1_1_state = WorkSettingsSingle.objects.filter(id=2).last()
+            oxygen_1_2_state = WorkSettingsSingle.objects.filter(id=3).last()
+            oxygen_1_3_state = WorkSettingsSingle.objects.filter(id=4).last()
+            oxygen_1_4_state = WorkSettingsSingle.objects.filter(id=5).last()
 
             water_consumption_in = ParameterFromAnalogSensorForBBO.objects.filter(name='water_consumption_in').first()
             air_supply = ParameterFromAnalogSensorForBBO.objects.filter(name='air_supply').first()
@@ -195,9 +221,9 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
             sum = 0
             res = 0
             hpk_today = (ParameterFromAnalogSensorForBBO.objects.filter(name='HPK',
-                            time__range=[
-                                        f'{datetime.datetime.today().date()} 00:00:00',
-                                        f'{datetime.datetime.today().date()} 23:59:59'])
+                                                                        time__range=[
+                                                                            f'{datetime.datetime.today().date()} 00:00:00',
+                                                                            f'{datetime.datetime.today().date()} 23:59:59'])
                          .all())
 
             for val in hpk_today:
@@ -221,8 +247,8 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
                 max_HPK_yesterday = ParameterFromAnalogSensorForBBO.objects.filter(name='max_HPK_yesterday').first()
             except Exception as _ex:
                 print(_ex)
-                avg_HPK_yesterday=0
-                max_HPK_yesterday=0
+                avg_HPK_yesterday = 0
+                max_HPK_yesterday = 0
 
             return dict(
                 bbo1=ParameterFromAnalogSensorForBBOSerializer(qs1, many=True).data,
@@ -239,12 +265,19 @@ class ParameterConsumer(ListModelMixin, GenericAsyncAPIConsumer):
                 avg_hpk_today=avg_HPK_today,
                 max_hpk_today=round(max_value['value__max'], 2),
                 avg_hpk_yesterday=HPKSerializer(avg_HPK_yesterday, many=False).data,
-                max_hpk_yesterday = HPKSerializer(max_HPK_yesterday, many=False).data,
+                max_hpk_yesterday=HPKSerializer(max_HPK_yesterday, many=False).data,
                 bowl1=DistributionBowlSerializer(bowl1, many=False).data,
                 bowl2=DistributionBowlSerializer(bowl2, many=False).data,
                 bowl3=DistributionBowlSerializer(bowl3, many=False).data,
                 bowl4=DistributionBowlSerializer(bowl4, many=False).data,
-                current_air_consumption=round(current_air_consumption, 2)
+                current_air_consumption=round(current_air_consumption, 2),
+                diffusor=DiffusorSerializer(diffusor, many=False).data,
+                silt_pump_state=SiltPumpStationSerializer(silt_state, many=False).data,
+                avg_oxy_state=WorkSettingsSingleSerializer(avg_oxy_state, many=False).data,
+                oxygen_1_1_state=WorkSettingsSingleSerializer(oxygen_1_1_state, many=False).data,
+                oxygen_1_2_state=WorkSettingsSingleSerializer(oxygen_1_2_state, many=False).data,
+                oxygen_1_3_state=WorkSettingsSingleSerializer(oxygen_1_3_state, many=False).data,
+                oxygen_1_4_state=WorkSettingsSingleSerializer(oxygen_1_4_state, many=False).data,
             )
 
 
@@ -290,6 +323,13 @@ class NotificationConsumer(ListModelMixin, GenericAsyncAPIConsumer):
         )
 
         await self.send_json(answer1)
+
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        id = text_data_json["id"]
+        is_read = text_data_json["is_read"]
+        await change_notify(pk=id, is_read=is_read)
+
 
     @model_observer(Notification)
     async def model_change(self, message, observer=None, **kwargs):
