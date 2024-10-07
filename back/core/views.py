@@ -32,13 +32,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-
-        # Add custom claims
-        # token['id'] = str(user.id)
         token['username'] = user.username
         token['role'] = user.role
-        # ...
-
         return token
 
 
@@ -154,7 +149,6 @@ class UserChangeView(GenericAPIView):
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
-            # queryset just for schema generation metadata
             return User.objects.none()
 
     def put(self, request, pk):
@@ -213,7 +207,6 @@ class UserDeletePasswordView(GenericAPIView):
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
-            # queryset just for schema generation metadata
             return User.objects.none()
 
     def get(self, request, pk):
@@ -235,7 +228,6 @@ class UserSetNewPassword(GenericAPIView):
 
     def get_queryset(self):
         if getattr(self, 'swagger_fake_view', False):
-            # queryset just for schema generation metadata
             return User.objects.none()
 
     def post(self, request, pk):
